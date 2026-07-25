@@ -1,0 +1,137 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
+import { Bot } from "lucide-react";
+
+import PageHeader from "../../components/layout/PageHeader";
+import Card, { CardBody, CardHeader } from "../../components/common/Card";
+import Spinner from "../../components/common/Spinner";
+import ChatThread from "../../components/common/ChatThread";
+
+import {
+  chatWithUniversityAgent,
+  getUniversityChatHistory,
+} from "../../api/universityApi";
+
+import { useAction, useAsync } from "../../hooks/useAsync";
+
+export default function AgentPreviewPage() {
+  const { universityId } = useParams();
+
+  const [messages, setMessages] = useState([]);
+  const [lastMeta, setLastMeta] = useState(null);
+
+  const { data: history, loading: historyLoading } = useAsync(
+    () => getUniversityChatHistory(universityId),
+    [universityId]
+  );
+
+  useEffect(() => {
+    if (!history) return;
+
+    setMessages(
+      (history.messages || []).map((m) => ({
+        role: m.sender === "assistant" ? "assistant" : "user",
+        content: m.content,
+      }))
+    );
+  }, [history]);
+
+  const { execute, loading } = useAction((message) =>
+    chatWithUniversityAgent(universityId, message)
+  );
+
+  const handleSend = async (message) => {
+    setMessages((m) => [...m, { role: "user", content: message }]);
+
+    try {
+      const res = await execute(message);
+
+      setLastMeta(res);
+
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: res.reply,
+          tone: res.pending ? "warning" : undefined,
+        },
+      ]);
+
+      if (res.pending) {
+        toast(
+          "Escalated to a pending query — the agent couldn't answer confidently.",
+          {
+            icon: "⚠️",
+          }
+        );
+      }
+    } catch (err) {
+      toast.error(err.message);
+
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: `Agent chat failed: ${err.message}`,
+          tone: "warning",
+        },
+      ]);
+    }
+  };
+
+  return (
+    <div
+      className="
+        flex
+        flex-col
+        h-[calc(100vh-130px)]
+      "
+    >
+      <PageHeader
+        title="University Agent"
+        description="Ask questions on your university profile."
+      />
+
+      <Card
+        className="
+          mt-4
+          mx-auto
+          w-full
+          max-w-6xl
+          flex-1
+          overflow-hidden
+          flex
+          flex-col
+        "
+      >
+        <CardHeader
+          icon={Bot}
+          title={lastMeta?.agent_name || "Your agent (Nova2)"}
+          subtitle="Every turn here is logged just like a real student conversation."
+        />
+
+        <CardBody className="flex-1 p-0 overflow-hidden">
+          {historyLoading && messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <Spinner label="Loading conversation..." />
+            </div>
+          ) : (
+            <ChatThread
+              compact
+              heightClass="h-full"
+              messages={messages}
+              onSend={handleSend}
+              loading={loading}
+              placeholder="Ask something a prospective student might ask..."
+              emptyTitle="Test your agent"
+              emptyDescription='Try: "What is the minimum GPA required to apply?"'
+            />
+          )}
+        </CardBody>
+      </Card>
+
+      <div className="h-4" />
+    </div>
+  );
+}
