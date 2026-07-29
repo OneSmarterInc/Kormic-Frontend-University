@@ -31,6 +31,52 @@ export const setScrapeUrls = (scrapeUrls) =>
 export const scrapeNow = () =>
   client.post("/university-admin/scrape-urls/scrape-now/").then((r) => r.data);
 
+/**
+ * POST /api/university-admin/scrape-urls/auto-discover/ — start a crawl of the profile's
+ * website_url. 409 if website_url isn't set, or a job is already running.
+ */
+export const startAutoDiscover = (maxPages) =>
+  client
+    .post("/university-admin/scrape-urls/auto-discover/", maxPages ? { max_pages: maxPages } : {})
+    .then((r) => r.data);
+
+/** GET /api/university-admin/scrape-urls/auto-discover/ — latest job for this university (404 if none ever run) */
+export const getLatestAutoDiscoverJob = () =>
+  client.get("/university-admin/scrape-urls/auto-discover/").then((r) => r.data);
+
+/** GET /api/university-admin/scrape-urls/auto-discover/<job_id>/ — poll one job */
+export const getAutoDiscoverJob = (jobId) =>
+  client.get(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/`).then((r) => r.data);
+
+/** POST /api/university-admin/scrape-urls/auto-discover/<job_id>/stop/ — cooperative cancel */
+export const stopAutoDiscoverJob = (jobId) =>
+  client
+    .post(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/stop/`)
+    .then((r) => r.data);
+
+/**
+ * GET /api/university-admin/scrape-urls/auto-discover/<job_id>/results/?mode=...
+ * mode: "student_essential" (default) | "base_important" | "all"
+ */
+export const getAutoDiscoverResults = (jobId, mode = "student_essential") =>
+  client
+    .get(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/results/`, {
+      params: { mode },
+    })
+    .then((r) => r.data);
+
+/**
+ * POST /api/university-admin/scrape-urls/auto-discover/<job_id>/apply/ — officer's picks.
+ * `replace: false` (default) merges into the existing manual list.
+ */
+export const applyAutoDiscoverResults = (jobId, { urls, replace = false }) =>
+  client
+    .post(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/apply/`, {
+      urls,
+      replace,
+    })
+    .then((r) => r.data);
+
 /** GET /api/university-admin/knowledge/ — optional ?section=<source_type>&source_url=<url> */
 export const listKnowledge = ({ section, sourceUrl } = {}) =>
   client

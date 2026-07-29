@@ -7,6 +7,7 @@ import LandingPage from "./pages/LandingPage";
 import TotpEnrollPage from "./pages/auth/TotpEnrollPage";
 import UniversityLoginPage from "./pages/auth/UniversityLoginPage";
 import UniversityRegisterPage from "./pages/auth/UniversityRegisterPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 
 import UniversityLayout from "./layouts/UniversityLayout";
 import DashboardPage from "./pages/university/DashboardPage";
@@ -40,6 +41,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<UniversityLoginPage />} />
           <Route path="/register" element={<UniversityRegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route element={<RequireEnrollable />}>
             <Route path="/totp/enroll" element={<TotpEnrollPage />} />

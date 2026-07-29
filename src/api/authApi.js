@@ -18,6 +18,20 @@ export const totpVerifyEnrollment = (code) =>
 export const verifyTotp = (mfaToken, code) =>
   client.post("/auth/verify-totp/", { mfa_token: mfaToken, code }).then((r) => r.data);
 
+/** POST /api/auth/forgot-password/ — step 1, always returns the same 200 shape */
+export const forgotPassword = (email) =>
+  client.post("/auth/forgot-password/", { email }).then((r) => r.data);
+
+/** POST /api/auth/reset-password/verify-otp/ — step 2, returns a short-lived reset_token */
+export const verifyResetOtp = (email, otp) =>
+  client.post("/auth/reset-password/verify-otp/", { email, otp }).then((r) => r.data);
+
+/** POST /api/auth/reset-password/confirm/ — step 3, invalidates all existing sessions on success */
+export const confirmResetPassword = (resetToken, newPassword) =>
+  client
+    .post("/auth/reset-password/confirm/", { reset_token: resetToken, new_password: newPassword })
+    .then((r) => r.data);
+
 /** POST /api/auth/refresh/ */
 export const refresh = (refreshToken) =>
   client.post("/auth/refresh/", { refresh: refreshToken }).then((r) => r.data);

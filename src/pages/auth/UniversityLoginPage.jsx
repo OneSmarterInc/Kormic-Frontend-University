@@ -93,16 +93,21 @@ export default function UniversityLoginPage() {
                 required
               />
             </Field>
+            <div className="-mt-2 text-right">
+              <Link to="/forgot-password" className="text-xs font-medium text-brand-600 hover:text-brand-700">
+                Forgot password?
+              </Link>
+            </div>
             <Button type="submit" className="w-full" loading={passwordLoading} icon={LogIn}>
               Continue
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-ink-500">
+          {/* <p className="mt-4 text-center text-sm text-ink-500">
             Don't have an account?{" "}
             <Link to="/register" className="font-medium text-brand-600 hover:text-brand-700">
               Register your university
             </Link>
-          </p>
+          </p> */}
         </>
       ) : (
         <form onSubmit={handleTotpSubmit} className="space-y-4">

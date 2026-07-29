@@ -1,22 +1,44 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { CheckCircle2, Globe, Plus, RotateCw, Trash2, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Compass,
+  Globe,
+  ListChecks,
+  Plus,
+  RotateCw,
+  Sparkles,
+  StopCircle,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody, CardHeader } from "../../components/common/Card";
 import { Input } from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import Badge from "../../components/common/Badge";
+import Badge, { autoDiscoverStatusTone } from "../../components/common/Badge";
 import ErrorBanner from "../../components/common/ErrorBanner";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
+import AutoDiscoverResultsModal from "../../components/university/AutoDiscoverResultsModal";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
+
+const ACTIVE_JOB_STATUSES = ["queued", "running", "stop_requested"];
+const POLL_INTERVAL_MS = 3000;
+const DEFAULT_MAX_PAGES = 1;
 
 export default function ScrapeSourcesPage() {
   const [urls, setUrls] = useState([]);
   const [draft, setDraft] = useState("");
   const [results, setResults] = useState(null);
   const [selectedUrl, setSelectedUrl] = useState(null);
+
+  const [job, setJob] = useState(null);
+  const [jobLoading, setJobLoading] = useState(true);
+  const [jobError, setJobError] = useState(null);
+  const [maxPages, setMaxPages] = useState(String(DEFAULT_MAX_PAGES));
+  const [showResults, setShowResults] = useState(false);
 
   const { data, loading, error, refetch } = useAsync(
     universityAdminApi.getScrapeUrls,
@@ -26,6 +48,44 @@ export default function ScrapeSourcesPage() {
   useEffect(() => {
     if (data) setUrls(data.scrape_urls || []);
   }, [data]);
+
+  // Latest auto-discover job, if any has ever run for this university.
+  useEffect(() => {
+    let cancelled = false;
+
+    universityAdminApi
+      .getLatestAutoDiscoverJob()
+      .then((latest) => {
+        if (!cancelled) setJob(latest);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err.status !== 404) setJobError(err);
+      })
+      .finally(() => {
+        if (!cancelled) setJobLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Poll while the job is still active.
+  useEffect(() => {
+    if (!job || !ACTIVE_JOB_STATUSES.includes(job.status)) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const updated = await universityAdminApi.getAutoDiscoverJob(job.id);
+        setJob(updated);
+      } catch (err) {
+        setJobError(err);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearTimeout(timer);
+  }, [job]);
 
   const {
     execute: persist,
@@ -38,6 +98,14 @@ export default function ScrapeSourcesPage() {
     loading: scraping,
     error: scrapeError,
   } = useAction(universityAdminApi.scrapeNow);
+
+  const { execute: startDiscover, loading: starting } = useAction((n) =>
+    universityAdminApi.startAutoDiscover(n)
+  );
+
+  const { execute: stopDiscover, loading: stopping } = useAction(() =>
+    universityAdminApi.stopAutoDiscoverJob(job.id)
+  );
 
   const addUrl = async () => {
     const value = draft.trim();
@@ -82,12 +150,143 @@ export default function ScrapeSourcesPage() {
     }
   };
 
+  const handleStartDiscover = async () => {
+    const parsed = Number(maxPages);
+    const value = Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+
+    try {
+      const newJob = await startDiscover(value);
+      setJob(newJob);
+      setJobError(null);
+      toast.success("Crawl started");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleStopDiscover = async () => {
+    try {
+      const updated = await stopDiscover();
+      setJob(updated);
+      toast.success("Stop requested");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleApplied = (nextScrapeUrls) => {
+    setUrls(nextScrapeUrls);
+    setShowResults(false);
+  };
+
+  const jobIsActive = !!job && ACTIVE_JOB_STATUSES.includes(job.status);
+  const jobHasResults =
+    !!job && ["completed", "stopped"].includes(job.status) && job.relevant_count + job.review_count > 0;
+  const crawlProgress =
+    job && job.pages_discovered > 0
+      ? Math.min(100, Math.round((job.pages_crawled / job.pages_discovered) * 100))
+      : 0;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Knowledge Sources"
         description="Save your program's official pages — scraping pulls durable facts straight into the knowledge base."
       />
+
+      <Card>
+        <CardHeader
+          icon={Compass}
+          title="Auto-discover"
+          subtitle="Crawl your website to find admissions, tuition, and program pages automatically."
+          action={
+            jobIsActive ? (
+              <Button
+                variant="secondary"
+                icon={StopCircle}
+                onClick={handleStopDiscover}
+                loading={stopping}
+                disabled={job.status === "stop_requested"}
+              >
+                {job.status === "stop_requested" ? "Stopping..." : "Stop"}
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={20}
+                  max={400}
+                  value={maxPages}
+                  onChange={(e) => setMaxPages(e.target.value)}
+                  className="max-w-12 hidden"
+                  readOnly={true}
+                  title="Max pages to crawl (20-400)"
+                />
+                <Button icon={Sparkles} onClick={handleStartDiscover} loading={starting}>
+                  {job ? "Run again" : "Start crawl"}
+                </Button>
+              </div>
+            )
+          }
+        />
+
+        <CardBody className="space-y-4">
+          {jobError && <ErrorBanner error={jobError} onDismiss={() => setJobError(null)} />}
+
+          {jobLoading ? (
+            <Spinner label="Checking for a previous crawl..." />
+          ) : !job ? (
+            <EmptyState
+              icon={Compass}
+              title="No crawl yet"
+              description="Start a crawl above to auto-discover pages from your website, then review and add the ones you want."
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={autoDiscoverStatusTone(job.status)}>{job.status.replace("_", " ")}</Badge>
+                <span className="truncate text-sm text-ink-500">{job.base_url}</span>
+              </div>
+
+              {(job.status === "queued" || job.status === "running" || job.status === "stop_requested") && (
+                <div className="space-y-1.5">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100">
+                    <div
+                      className="h-full rounded-full bg-brand-600 transition-all duration-500"
+                      style={{ width: `${crawlProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-ink-400">
+                    <span className="truncate">
+                      {job.current_url || "Starting..."}
+                    </span>
+                    <span className="shrink-0">
+                      {job.pages_crawled} / {job.pages_discovered || "?"} pages
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {job.status === "failed" && job.error_message && (
+                <ErrorBanner error={job.error_message} />
+              )}
+
+              {/* <div className="flex flex-wrap gap-2">
+                <Badge tone="success">{job.relevant_count} relevant</Badge>
+                <Badge tone="warning">{job.review_count} review</Badge>
+                <Badge tone="neutral">{job.excluded_count} excluded</Badge>
+                {job.failed_count > 0 && <Badge tone="danger">{job.failed_count} failed</Badge>}
+              </div> */}
+
+              {jobHasResults && (
+                <Button icon={ListChecks} variant="secondary" onClick={() => setShowResults(true)}>
+                  Review discovered pages
+                </Button>
+              )}
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader
@@ -140,7 +339,7 @@ export default function ScrapeSourcesPage() {
             <EmptyState
               icon={Globe}
               title="No URLs saved yet"
-              description="Add your admissions or program pages above, then hit Scrape now."
+              description="Add your admissions or program pages above, or use auto-discover, then hit Scrape now."
             />
           ) : (
             <ul className="space-y-2">
@@ -151,11 +350,10 @@ export default function ScrapeSourcesPage() {
                   <li
                     key={url}
                     onClick={() => setSelectedUrl(url)}
-                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm ${
-                      isSelected
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm ${isSelected
                         ? "border-blue-500 bg-blue-50/50 shadow-sm"
                         : "border-ink-100 bg-white"
-                    }`}
+                      }`}
                   >
                     <a
                       href={url}
@@ -222,6 +420,15 @@ export default function ScrapeSourcesPage() {
             ))}
           </CardBody>
         </Card>
+      )}
+
+      {job && (
+        <AutoDiscoverResultsModal
+          jobId={job.id}
+          open={showResults}
+          onClose={() => setShowResults(false)}
+          onApplied={handleApplied}
+        />
       )}
     </div>
   );

@@ -21,7 +21,14 @@ client.interceptors.request.use((config) => {
 
 // Endpoints that should never trigger a refresh-and-retry on 401 — either
 // they run before any token exists, or they're the refresh call itself.
-const REFRESH_EXEMPT = ["/auth/login/", "/auth/register/", "/auth/verify-totp/", "/auth/refresh/"];
+const REFRESH_EXEMPT = [
+  "/auth/login/",
+  "/auth/register/",
+  "/auth/verify-totp/",
+  "/auth/refresh/",
+  "/auth/forgot-password/",
+  "/auth/reset-password/",
+];
 
 // Shared in-flight refresh promise so concurrent 401s trigger one refresh call, not many.
 let refreshPromise = null;

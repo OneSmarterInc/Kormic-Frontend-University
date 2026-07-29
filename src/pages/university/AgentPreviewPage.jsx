@@ -85,7 +85,7 @@ export default function AgentPreviewPage() {
       className="
         flex
         flex-col
-        h-[calc(100vh-130px)]
+        h-[calc(100vh-30px)]
       "
     >
       <PageHeader
@@ -95,7 +95,7 @@ export default function AgentPreviewPage() {
 
       <Card
         className="
-          mt-4
+          
           mx-auto
           w-full
           max-w-6xl

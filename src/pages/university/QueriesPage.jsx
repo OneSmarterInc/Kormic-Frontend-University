@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import clsx from "clsx";
-import { MessagesSquare, CheckCircle2, Pencil } from "lucide-react";
+import { MessagesSquare, CheckCircle2, Pencil, EyeOff, Trash2 } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody } from "../../components/common/Card";
 import Spinner from "../../components/common/Spinner";
@@ -17,7 +17,12 @@ import {
   listActiveQueries,
   listArchivedQueries,
 } from "../../api/universityApi";
-import { answerQuery, editQueryAnswer } from "../../api/queriesApi";
+import {
+  answerQuery,
+  editQueryAnswer,
+  ignoreQuery,
+  deleteQuery,
+} from "../../api/queriesApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 
 const TABS = [
@@ -30,6 +35,8 @@ export default function QueriesPage() {
   const { universityId } = useParams();
   const [tab, setTab] = useState("active");
   const [answering, setAnswering] = useState(null); // query object or null
+  const [ignoring, setIgnoring] = useState(null); // query object or null
+  const [deleting, setDeleting] = useState(null); // query object or null
 
   const activeTab = TABS.find((t) => t.key === tab);
   const { data, loading, error, refetch } = useAsync(
@@ -76,7 +83,13 @@ export default function QueriesPage() {
       ) : (
         <div className="space-y-3">
           {queries.map((q) => (
-            <QueryCard key={q.query_id} query={q} onRespond={() => setAnswering(q)} />
+            <QueryCard
+              key={q.query_id}
+              query={q}
+              onRespond={() => setAnswering(q)}
+              onIgnore={() => setIgnoring(q)}
+              onDelete={() => setDeleting(q)}
+            />
           ))}
         </div>
       )}
@@ -89,11 +102,29 @@ export default function QueriesPage() {
           refetch();
         }}
       />
+
+      <IgnoreModal
+        query={ignoring}
+        onClose={() => setIgnoring(null)}
+        onSaved={() => {
+          setIgnoring(null);
+          refetch();
+        }}
+      />
+
+      <DeleteModal
+        query={deleting}
+        onClose={() => setDeleting(null)}
+        onDeleted={() => {
+          setDeleting(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }
 
-function QueryCard({ query, onRespond }) {
+function QueryCard({ query, onRespond, onIgnore, onDelete }) {
   const resolved = query.display_status === "answered";
   return (
     <Card className="p-4">
@@ -135,14 +166,26 @@ function QueryCard({ query, onRespond }) {
           )}
         </div>
 
-        <Button
-          variant={resolved ? "secondary" : "primary"}
-          size="sm"
-          icon={resolved ? Pencil : CheckCircle2}
-          onClick={onRespond}
-        >
-          {resolved ? "Edit answer" : "Answer"}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant={resolved ? "secondary" : "primary"}
+            size="sm"
+            icon={resolved ? Pencil : CheckCircle2}
+            onClick={onRespond}
+          >
+            {resolved ? "Edit answer" : "Answer"}
+          </Button>
+
+          {!resolved && (
+            <Button variant="secondary" size="sm" icon={EyeOff} onClick={onIgnore}>
+              Ignore
+            </Button>
+          )}
+
+          <Button variant="danger" size="sm" icon={Trash2} onClick={onDelete}>
+            Delete
+          </Button>
+        </div>
       </div>
     </Card>
   );
@@ -217,6 +260,120 @@ function AnswerModal({ query, onClose, onSaved }) {
             />
           </Field>
         </form>
+      )}
+    </Modal>
+  );
+}
+
+function IgnoreModal({ query, onClose, onSaved }) {
+  const [reason, setReason] = useState("");
+  const [ignoredBy, setIgnoredBy] = useState("");
+
+  useEffect(() => {
+    if (query) {
+      setReason("");
+      setIgnoredBy("");
+    }
+  }, [query]);
+
+  const { execute, loading, error } = useAction(() =>
+    ignoreQuery(query.query_id, { reason, ignoredBy })
+  );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await execute();
+      toast.success(res.message || "Query ignored");
+      onSaved();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  return (
+    <Modal
+      open={!!query}
+      onClose={onClose}
+      title={`Ignore · #${query?.query_id}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="secondary" onClick={handleSubmit} loading={loading}>
+            Ignore query
+          </Button>
+        </>
+      }
+    >
+      {query && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-700">{query.question}</div>
+          <p className="text-xs text-ink-500">
+            This dismisses the query without answering it — the row is kept but no longer
+            shows up as needing attention.
+          </p>
+          {error && <ErrorBanner error={error} />}
+          <Field label="Reason" hint="Optional">
+            <Textarea
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Duplicate of query #41"
+            />
+          </Field>
+          <Field label="Ignored by" hint="Optional">
+            <Input
+              value={ignoredBy}
+              onChange={(e) => setIgnoredBy(e.target.value)}
+              placeholder="Dr. Sarah Chen"
+            />
+          </Field>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+function DeleteModal({ query, onClose, onDeleted }) {
+  const { execute, loading, error } = useAction(() => deleteQuery(query.query_id));
+
+  const handleDelete = async () => {
+    try {
+      await execute();
+      toast.success("Query deleted");
+      onDeleted();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  return (
+    <Modal
+      open={!!query}
+      onClose={onClose}
+      title={`Delete · #${query?.query_id}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" icon={Trash2} onClick={handleDelete} loading={loading}>
+            Delete permanently
+          </Button>
+        </>
+      }
+    >
+      {query && (
+        <div className="space-y-4">
+          <div className="rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-700">{query.question}</div>
+          {error && <ErrorBanner error={error} />}
+          <p className="text-sm text-red-700">
+            This permanently deletes query #{query.query_id}. This cannot be undone — use
+            "Ignore" instead if you just want to dismiss it.
+          </p>
+        </div>
       )}
     </Modal>
   );

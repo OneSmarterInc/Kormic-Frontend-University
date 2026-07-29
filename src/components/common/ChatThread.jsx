@@ -37,10 +37,10 @@ export default function ChatThread({
   const hasMessages = messages.length > 0;
 
   const finalHeightClass =
-    heightClass || (compact ? "h-[320px]" : "h-[560px]");
+    heightClass || (compact ? "h-[420px]" : "h-[560px]");
 
   return (
-    <div className={clsx("flex flex-col bg-white", finalHeightClass)}>
+    <div className={clsx("flex min-h-0 flex-col bg-white", finalHeightClass)}>
       <div
         ref={scrollRef}
         className={clsx(

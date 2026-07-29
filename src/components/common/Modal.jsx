@@ -1,8 +1,15 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
+import clsx from "clsx";
 
-export default function Modal({ open, onClose, title, children, footer }) {
+const SIZES = {
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+  xl: "max-w-3xl",
+};
+
+export default function Modal({ open, onClose, title, children, footer, size = "md" }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
@@ -18,7 +25,12 @@ export default function Modal({ open, onClose, title, children, footer }) {
         className="absolute inset-0 bg-ink-900/40 backdrop-blur-[1px]"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-lg animate-fade-in rounded-2xl bg-white shadow-xl">
+      <div
+        className={clsx(
+          "relative z-10 flex max-h-[85vh] w-full animate-fade-in flex-col rounded-2xl bg-white shadow-xl",
+          SIZES[size] || SIZES.md
+        )}
+      >
         <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
           <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
           <button
@@ -29,8 +41,10 @@ export default function Modal({ open, onClose, title, children, footer }) {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-ink-100 px-5 py-3">{footer}</div>}
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {footer && (
+          <div className="flex shrink-0 justify-end gap-2 border-t border-ink-100 px-5 py-3">{footer}</div>
+        )}
       </div>
     </div>,
     document.body

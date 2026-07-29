@@ -49,3 +49,34 @@ export function queryStatusTone(status) {
       return "neutral";
   }
 }
+
+export function autoDiscoverStatusTone(status) {
+  switch (status) {
+    case "running":
+    case "queued":
+      return "brand";
+    case "stop_requested":
+      return "warning";
+    case "completed":
+      return "success";
+    case "failed":
+      return "danger";
+    case "stopped":
+      return "neutral";
+    default:
+      return "neutral";
+  }
+}
+
+export function decisionStatusTone(status) {
+  switch (status) {
+    case "relevant":
+      return "success";
+    case "review":
+      return "warning";
+    case "excluded":
+      return "neutral";
+    default:
+      return "neutral";
+  }
+}
