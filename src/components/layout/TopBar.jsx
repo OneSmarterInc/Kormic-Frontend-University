@@ -83,7 +83,7 @@ export default function TopBar() {
 
               {/* Notification */}
 
-              <button
+              {/* <button
                 className="
                   relative
                   rounded-full
@@ -108,7 +108,7 @@ export default function TopBar() {
                   "
                 />
 
-              </button>
+              </button> */}
 
               {/* User */}
 

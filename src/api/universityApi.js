@@ -35,6 +35,10 @@ export const chatWithUniversityAgent = (universityId, message) =>
 export const getUniversityChatHistory = (universityId) =>
   client.get(`/university/${encodeURIComponent(universityId)}/chat/history/`).then((r) => r.data);
 
+/** DELETE /api/university/<university_id>/chat/history/ — clears the logged preview conversation */
+export const deleteUniversityChatHistory = (universityId) =>
+  client.delete(`/university/${encodeURIComponent(universityId)}/chat/history/`).then((r) => r.data);
+
 /** GET /api/university/<university_id>/queries/ */
 export const listAllQueries = (universityId) =>
   client.get(`/university/${encodeURIComponent(universityId)}/queries/`).then((r) => r.data);

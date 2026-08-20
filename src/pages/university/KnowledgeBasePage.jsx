@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { BrainCircuit, Link2, Pencil, Plus, Trash2, X, Check } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody, CardHeader } from "../../components/common/Card";
-import { Field, Input, Textarea } from "../../components/common/Input";
+import { Field, Input, Select, Textarea } from "../../components/common/Input";
 import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import ErrorBanner from "../../components/common/ErrorBanner";
@@ -12,6 +12,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
+import { KNOWLEDGE_GROUPS, knowledgeGroupLabel, knowledgeGroupTone } from "../../lib/knowledgeGroups";
 
 const SOURCE_META = {
   human_verified: { tone: "success", label: "Human verified" },
@@ -217,9 +218,10 @@ function SectionTab({ active, label, count, onClick }) {
 function AddFactCard({ onCreated }) {
   const [topic, setTopic] = useState("");
   const [content, setContent] = useState("");
+  const [group, setGroup] = useState("");
 
   const { execute, loading, error } = useAction(() =>
-    universityAdminApi.createKnowledge({ topic, content })
+    universityAdminApi.createKnowledge({ topic, content, group: group || undefined })
   );
 
   const handleSubmit = async (e) => {
@@ -230,6 +232,7 @@ function AddFactCard({ onCreated }) {
       onCreated(fact);
       setTopic("");
       setContent("");
+      setGroup("");
       toast.success("Fact added");
     } catch (err) {
       toast.error(err.message);
@@ -247,7 +250,7 @@ function AddFactCard({ onCreated }) {
         <form onSubmit={handleSubmit} className="space-y-3">
           {error && <ErrorBanner error={error} />}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <div className="sm:col-span-1">
               <Field label="Topic" required>
                 <Input
@@ -268,6 +271,19 @@ function AddFactCard({ onCreated }) {
                   placeholder="January 15, 2027 for Fall 2027 admission."
                   required
                 />
+              </Field>
+            </div>
+
+            <div className="sm:col-span-1">
+              <Field label="Group" hint="Optional">
+                <Select value={group} onChange={(e) => setGroup(e.target.value)}>
+                  <option value="">Ungrouped</option>
+                  {KNOWLEDGE_GROUPS.map((g) => (
+                    <option key={g.slug} value={g.slug}>
+                      {g.label}
+                    </option>
+                  ))}
+                </Select>
               </Field>
             </div>
           </div>
@@ -324,6 +340,10 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <Badge tone={meta.tone}>{meta.label}</Badge>
+
+            {fact.group && (
+              <Badge tone={knowledgeGroupTone(fact.group)}>{knowledgeGroupLabel(fact.group)}</Badge>
+            )}
 
             {fact.times_used > 0 && (
               <span className="text-xs text-ink-400">
@@ -384,9 +404,10 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
 function EditFactForm({ fact, onCancel, onSaved }) {
   const [topic, setTopic] = useState(fact.topic);
   const [content, setContent] = useState(fact.content);
+  const [group, setGroup] = useState(fact.group || "");
 
   const { execute, loading, error } = useAction(() =>
-    universityAdminApi.updateKnowledge(fact.id, { topic, content })
+    universityAdminApi.updateKnowledge(fact.id, { topic, content, group: group || null })
   );
 
   const handleSubmit = async (e) => {
@@ -412,6 +433,17 @@ function EditFactForm({ fact, onCancel, onSaved }) {
 
       <Field label="Content" required>
         <Textarea rows={2} value={content} onChange={(e) => setContent(e.target.value)} required />
+      </Field>
+
+      <Field label="Group" hint="Optional">
+        <Select value={group} onChange={(e) => setGroup(e.target.value)}>
+          <option value="">Ungrouped</option>
+          {KNOWLEDGE_GROUPS.map((g) => (
+            <option key={g.slug} value={g.slug}>
+              {g.label}
+            </option>
+          ))}
+        </Select>
       </Field>
 
       <div className="flex items-center gap-2">

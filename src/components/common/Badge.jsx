@@ -80,3 +80,11 @@ export function decisionStatusTone(status) {
       return "neutral";
   }
 }
+
+/** confidence is a 0.0-1.0 float or null (pre-existing rows with no score recorded). */
+export function confidenceTone(confidence) {
+  if (confidence == null) return "neutral";
+  if (confidence >= 0.7) return "success";
+  if (confidence >= 0.4) return "warning";
+  return "danger";
+}

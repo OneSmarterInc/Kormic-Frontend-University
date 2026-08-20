@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MessagesSquare,
   Sparkles,
+  Split,
   Users,
   Settings,
   HelpCircle,
@@ -44,6 +45,11 @@ const NAV_GROUPS = [
         to: "settings/knowledge-base",
         label: "Knowledge Base",
         icon: Sparkles,
+      },
+      {
+        to: "settings/knowledge-groups",
+        label: "Knowledge Groups",
+        icon: Split,
       },
       {
         to: "settings/agent-preview",

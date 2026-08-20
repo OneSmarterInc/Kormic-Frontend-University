@@ -14,6 +14,7 @@ import DashboardPage from "./pages/university/DashboardPage";
 import SettingsProfilePage from "./pages/university/SettingsProfilePage";
 import ScrapeSourcesPage from "./pages/university/ScrapeSourcesPage";
 import KnowledgeBasePage from "./pages/university/KnowledgeBasePage";
+import KnowledgeGroupsPage from "./pages/university/KnowledgeGroupsPage";
 import AgentPreviewPage from "./pages/university/AgentPreviewPage";
 import ProfilesListPage from "./pages/university/ProfilesListPage";
 import ProfileDetailPage from "./pages/university/ProfileDetailPage";
@@ -57,6 +58,7 @@ function App() {
                   <Route path="settings/profile" element={<SettingsProfilePage />} />
                   <Route path="settings/sources" element={<ScrapeSourcesPage />} />
                   <Route path="settings/knowledge-base" element={<KnowledgeBasePage />} />
+                  <Route path="settings/knowledge-groups" element={<KnowledgeGroupsPage />} />
                   <Route path="settings/agent-preview" element={<AgentPreviewPage />} />
                   <Route path="profiles" element={<ProfilesListPage />} />
                   <Route path="profiles/:studentId" element={<ProfileDetailPage />} />

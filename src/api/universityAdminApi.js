@@ -77,21 +77,52 @@ export const applyAutoDiscoverResults = (jobId, { urls, replace = false }) =>
     })
     .then((r) => r.data);
 
-/** GET /api/university-admin/knowledge/ — optional ?section=<source_type>&source_url=<url> */
-export const listKnowledge = ({ section, sourceUrl } = {}) =>
+/**
+ * GET /api/university-admin/scrape-urls/auto-discover/<job_id>/clusters/ — this job's
+ * candidate pages grouped by category, with department/knowledge-group mapping and any
+ * existing approval record per cluster.
+ */
+export const getAutoDiscoverClusters = (jobId) =>
+  client
+    .get(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/clusters/`)
+    .then((r) => r.data);
+
+/**
+ * POST /api/university-admin/scrape-urls/auto-discover/<job_id>/clusters/<category>/approve/ —
+ * applies the cluster's URLs, scrapes them inline, and tags the resulting facts with the
+ * matching knowledge group. Re-approving the same category updates the existing approval
+ * record. Runs synchronously — expect a few seconds per URL.
+ */
+export const approveAutoDiscoverCluster = (jobId, category) =>
+  client
+    .post(
+      `/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/clusters/${encodeURIComponent(
+        category
+      )}/approve/`
+    )
+    .then((r) => r.data);
+
+/** GET /api/university-admin/knowledge/ — optional ?section=<source_type>&source_url=<url>&group=<slug> */
+export const listKnowledge = ({ section, sourceUrl, group } = {}) =>
   client
     .get("/university-admin/knowledge/", {
       params: {
         ...(section ? { section } : {}),
         ...(sourceUrl ? { source_url: sourceUrl } : {}),
+        ...(group ? { group } : {}),
       },
     })
     .then((r) => r.data);
 
 /** POST /api/university-admin/knowledge/ — always stored as source_type "manual" */
-export const createKnowledge = ({ topic, content, confidence }) =>
+export const createKnowledge = ({ topic, content, confidence, group }) =>
   client
-    .post("/university-admin/knowledge/", { topic, content, ...(confidence != null ? { confidence } : {}) })
+    .post("/university-admin/knowledge/", {
+      topic,
+      content,
+      ...(confidence != null ? { confidence } : {}),
+      ...(group ? { group } : {}),
+    })
     .then((r) => r.data);
 
 /** GET /api/university-admin/knowledge/sections/ — counts grouped by source_type */
@@ -109,3 +140,26 @@ export const updateKnowledge = (id, payload) =>
 /** DELETE /api/university-admin/knowledge/<id>/ — only "manual"/"seed" facts are deletable */
 export const deleteKnowledge = (id) =>
   client.delete(`/university-admin/knowledge/${encodeURIComponent(id)}/`).then((r) => r.data);
+
+/**
+ * GET /api/university-admin/knowledge-groups/ — the 4 default groups are lazily
+ * created on first call, so no separate setup step is needed.
+ */
+export const listKnowledgeGroups = () =>
+  client.get("/university-admin/knowledge-groups/").then((r) => r.data);
+
+/** PATCH /api/university-admin/knowledge-groups/<slug>/ — send only the fields being changed */
+export const updateKnowledgeGroup = (slug, payload) =>
+  client
+    .patch(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/`, payload)
+    .then((r) => r.data);
+
+/**
+ * GET /api/university-admin/knowledge-groups/<slug>/knowledge/ — the group's own record plus
+ * all of its facts in one call. 404s if <slug> isn't one of the four valid groups. Lazily
+ * bootstraps the four default groups, same as listKnowledgeGroups.
+ */
+export const getKnowledgeGroupDetail = (slug) =>
+  client
+    .get(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/knowledge/`)
+    .then((r) => r.data);

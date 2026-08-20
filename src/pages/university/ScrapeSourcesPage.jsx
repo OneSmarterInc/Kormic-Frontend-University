@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Compass,
   Globe,
+  Layers,
   ListChecks,
   Plus,
   RotateCw,
@@ -21,6 +22,7 @@ import ErrorBanner from "../../components/common/ErrorBanner";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import AutoDiscoverResultsModal from "../../components/university/AutoDiscoverResultsModal";
+import AutoDiscoverClustersModal from "../../components/university/AutoDiscoverClustersModal";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 
@@ -39,6 +41,7 @@ export default function ScrapeSourcesPage() {
   const [jobError, setJobError] = useState(null);
   const [maxPages, setMaxPages] = useState(String(DEFAULT_MAX_PAGES));
   const [showResults, setShowResults] = useState(false);
+  const [showClusters, setShowClusters] = useState(false);
 
   const { data, loading, error, refetch } = useAsync(
     universityAdminApi.getScrapeUrls,
@@ -279,9 +282,14 @@ export default function ScrapeSourcesPage() {
               </div> */}
 
               {jobHasResults && (
-                <Button icon={ListChecks} variant="secondary" onClick={() => setShowResults(true)}>
-                  Review discovered pages
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button icon={ListChecks} variant="secondary" onClick={() => setShowResults(true)}>
+                    Review discovered pages
+                  </Button>
+                  <Button icon={Layers} variant="secondary" onClick={() => setShowClusters(true)}>
+                    Review by department
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -428,6 +436,14 @@ export default function ScrapeSourcesPage() {
           open={showResults}
           onClose={() => setShowResults(false)}
           onApplied={handleApplied}
+        />
+      )}
+
+      {job && (
+        <AutoDiscoverClustersModal
+          jobId={job.id}
+          open={showClusters}
+          onClose={() => setShowClusters(false)}
         />
       )}
     </div>

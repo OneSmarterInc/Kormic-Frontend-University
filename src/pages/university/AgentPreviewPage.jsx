@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Bot } from "lucide-react";
+import { Bot, Trash2 } from "lucide-react";
 
 import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody, CardHeader } from "../../components/common/Card";
+import Button from "../../components/common/Button";
 import Spinner from "../../components/common/Spinner";
 import ChatThread from "../../components/common/ChatThread";
 
 import {
   chatWithUniversityAgent,
   getUniversityChatHistory,
+  deleteUniversityChatHistory,
 } from "../../api/universityApi";
 
 import { useAction, useAsync } from "../../hooks/useAsync";
@@ -40,6 +42,23 @@ export default function AgentPreviewPage() {
   const { execute, loading } = useAction((message) =>
     chatWithUniversityAgent(universityId, message)
   );
+
+  const { execute: clearHistory, loading: clearing } = useAction(() =>
+    deleteUniversityChatHistory(universityId)
+  );
+
+  const handleClearHistory = async () => {
+    if (!window.confirm("Clear this conversation? This can't be undone.")) return;
+
+    try {
+      await clearHistory();
+      setMessages([]);
+      setLastMeta(null);
+      toast.success("Conversation cleared");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   const handleSend = async (message) => {
     setMessages((m) => [...m, { role: "user", content: message }]);
@@ -109,6 +128,19 @@ export default function AgentPreviewPage() {
           icon={Bot}
           title={lastMeta?.agent_name || "Your agent (Nova2)"}
           subtitle="Every turn here is logged just like a real student conversation."
+          action={
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              icon={Trash2}
+              loading={clearing}
+              disabled={messages.length === 0}
+              onClick={handleClearHistory}
+            >
+              Clear conversation
+            </Button>
+          }
         />
 
         <CardBody className="flex-1 p-0 overflow-hidden">

@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import clsx from "clsx";
-import { MessagesSquare, CheckCircle2, Pencil, EyeOff, Trash2 } from "lucide-react";
+import { MessagesSquare, CheckCircle2, Pencil, EyeOff, Trash2, Send } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody } from "../../components/common/Card";
 import Spinner from "../../components/common/Spinner";
 import ErrorBanner from "../../components/common/ErrorBanner";
 import EmptyState from "../../components/common/EmptyState";
-import Badge, { queryStatusTone } from "../../components/common/Badge";
+import Badge, { queryStatusTone, confidenceTone } from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import { Field, Input, Textarea } from "../../components/common/Input";
@@ -24,6 +24,7 @@ import {
   deleteQuery,
 } from "../../api/queriesApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
+import { knowledgeGroupLabel, knowledgeGroupTone } from "../../lib/knowledgeGroups";
 
 const TABS = [
   { key: "active", label: "Active", fetcher: listActiveQueries },
@@ -133,6 +134,14 @@ function QueryCard({ query, onRespond, onIgnore, onDelete }) {
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <Badge tone={queryStatusTone(query.display_status)}>{query.display_status}</Badge>
             {query.priority && <Badge tone="neutral">{query.priority}</Badge>}
+            {query.group && (
+              <Badge tone={knowledgeGroupTone(query.group)}>{knowledgeGroupLabel(query.group)}</Badge>
+            )}
+            {/* <Badge tone={confidenceTone(query.confidence)}>
+              {query.confidence != null
+                ? `${Math.round(query.confidence * 100)}% confidence`
+                : "No score recorded"}
+            </Badge> */}
             <span className="text-xs text-ink-400">#{query.query_id}</span>
             {query.student_name && (
               <span className="text-xs text-ink-500">· {query.student_name}</span>
@@ -142,6 +151,20 @@ function QueryCard({ query, onRespond, onIgnore, onDelete }) {
           <p className="text-sm font-medium text-ink-900">{query.question}</p>
           {query.urgency_reason && (
             <p className="mt-1 text-xs text-ink-500">{query.urgency_reason}</p>
+          )}
+          {query.routed_to_name && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-500">
+              <Send className="h-3 w-3 shrink-0" />
+              Routed to {query.routed_to_name}
+              {query.routed_to_email && (
+                <a
+                  href={`mailto:${query.routed_to_email}`}
+                  className="text-brand-600 hover:underline"
+                >
+                  {query.routed_to_email}
+                </a>
+              )}
+            </p>
           )}
           {/* {query.escalation_chain?.length > 0 && (
             <ol className="mt-2 space-y-1 border-l-2 border-ink-100 pl-3">
