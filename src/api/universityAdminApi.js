@@ -27,9 +27,21 @@ export const getScrapeUrls = () =>
 export const setScrapeUrls = (scrapeUrls) =>
   client.put("/university-admin/scrape-urls/", { scrape_urls: scrapeUrls }).then((r) => r.data);
 
-/** POST /api/university-admin/scrape-urls/scrape-now/ — blocks a few seconds per URL */
+/**
+ * POST /api/university-admin/scrape-urls/scrape-now/ — queues a scrape job and returns
+ * immediately (202); poll getScrapeJob(id) until status is "completed" or "failed".
+ * 409 if a job is already queued/running for this university.
+ */
 export const scrapeNow = () =>
   client.post("/university-admin/scrape-urls/scrape-now/").then((r) => r.data);
+
+/** GET /api/university-admin/scrape-urls/scrape-now/<job_id>/ — poll one scrape-now job */
+export const getScrapeJob = (jobId) =>
+  client.get(`/university-admin/scrape-urls/scrape-now/${encodeURIComponent(jobId)}/`).then((r) => r.data);
+
+/** GET /api/university-admin/scrape-urls/scrape-now/ — most recent scrape-now job for this university (404 if none ever run) */
+export const getLatestScrapeJob = () =>
+  client.get("/university-admin/scrape-urls/scrape-now/").then((r) => r.data);
 
 /**
  * POST /api/university-admin/scrape-urls/auto-discover/ — start a crawl of the profile's

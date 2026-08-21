@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   CheckCircle2,
@@ -27,13 +27,13 @@ import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 
 const ACTIVE_JOB_STATUSES = ["queued", "running", "stop_requested"];
+const SCRAPE_ACTIVE_STATUSES = ["queued", "running"];
 const POLL_INTERVAL_MS = 3000;
 const DEFAULT_MAX_PAGES = 1;
 
 export default function ScrapeSourcesPage() {
   const [urls, setUrls] = useState([]);
   const [draft, setDraft] = useState("");
-  const [results, setResults] = useState(null);
   const [selectedUrl, setSelectedUrl] = useState(null);
 
   const [job, setJob] = useState(null);
@@ -42,6 +42,11 @@ export default function ScrapeSourcesPage() {
   const [maxPages, setMaxPages] = useState(String(DEFAULT_MAX_PAGES));
   const [showResults, setShowResults] = useState(false);
   const [showClusters, setShowClusters] = useState(false);
+
+  const [scrapeJob, setScrapeJob] = useState(null);
+  const [scrapeJobLoading, setScrapeJobLoading] = useState(true);
+  const [scrapeJobError, setScrapeJobError] = useState(null);
+  const notifiedScrapeJobRef = useRef(null);
 
   const { data, loading, error, refetch } = useAsync(
     universityAdminApi.getScrapeUrls,
@@ -89,6 +94,60 @@ export default function ScrapeSourcesPage() {
 
     return () => clearTimeout(timer);
   }, [job]);
+
+  // Latest scrape-now job, if any has ever run for this university — lets a
+  // reloaded page resume polling without having kept the job id client-side.
+  useEffect(() => {
+    let cancelled = false;
+
+    universityAdminApi
+      .getLatestScrapeJob()
+      .then((latest) => {
+        if (!cancelled) setScrapeJob(latest);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err.status !== 404) setScrapeJobError(err);
+      })
+      .finally(() => {
+        if (!cancelled) setScrapeJobLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Poll while the scrape job is queued/running.
+  useEffect(() => {
+    if (!scrapeJob || !SCRAPE_ACTIVE_STATUSES.includes(scrapeJob.status)) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const updated = await universityAdminApi.getScrapeJob(scrapeJob.id);
+        setScrapeJob(updated);
+      } catch (err) {
+        setScrapeJobError(err);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearTimeout(timer);
+  }, [scrapeJob]);
+
+  // Toast once per job/status transition into a terminal state.
+  useEffect(() => {
+    if (!scrapeJob) return;
+    const key = `${scrapeJob.id}:${scrapeJob.status}`;
+    if (notifiedScrapeJobRef.current === key) return;
+
+    if (scrapeJob.status === "completed") {
+      notifiedScrapeJobRef.current = key;
+      toast.success(`${scrapeJob.result?.total_facts_stored ?? 0} facts stored`);
+    } else if (scrapeJob.status === "failed") {
+      notifiedScrapeJobRef.current = key;
+      toast.error(scrapeJob.error_message || "Scrape failed");
+    }
+  }, [scrapeJob]);
 
   const {
     execute: persist,
@@ -145,10 +204,19 @@ export default function ScrapeSourcesPage() {
 
   const handleScrapeNow = async () => {
     try {
-      const res = await runScrape();
-      setResults(res);
-      toast.success(`${res.total_facts_stored} facts stored`);
+      const newJob = await runScrape();
+      setScrapeJob(newJob);
+      setScrapeJobError(null);
     } catch (err) {
+      if (err.status === 409) {
+        // Another scrape is already in progress — resume polling it instead of erroring out.
+        try {
+          setScrapeJob(await universityAdminApi.getLatestScrapeJob());
+        } catch {
+          toast.error(err.message);
+        }
+        return;
+      }
       toast.error(err.message);
     }
   };
@@ -189,6 +257,8 @@ export default function ScrapeSourcesPage() {
     job && job.pages_discovered > 0
       ? Math.min(100, Math.round((job.pages_crawled / job.pages_discovered) * 100))
       : 0;
+
+  const scrapeJobIsActive = !!scrapeJob && SCRAPE_ACTIVE_STATUSES.includes(scrapeJob.status);
 
   return (
     <div className="space-y-6">
@@ -301,19 +371,30 @@ export default function ScrapeSourcesPage() {
           icon={Globe}
           title="Saved URLs"
           action={
-            <Button
-              icon={RotateCw}
-              loading={scraping}
-              onClick={handleScrapeNow}
-              disabled={urls.length === 0}
-            >
-              Scrape now
-            </Button>
+            <div className="flex items-center gap-2">
+              {scrapeJobIsActive && (
+                <Badge tone={autoDiscoverStatusTone(scrapeJob.status)}>{scrapeJob.status}</Badge>
+              )}
+              <Button
+                icon={RotateCw}
+                loading={scraping}
+                onClick={handleScrapeNow}
+                disabled={urls.length === 0 || scrapeJobIsActive || scrapeJobLoading}
+              >
+                {scrapeJobIsActive ? "Scraping..." : "Scrape now"}
+              </Button>
+            </div>
           }
         />
 
         <CardBody className="space-y-4">
           {scrapeError && <ErrorBanner error={scrapeError} />}
+          {scrapeJobError && (
+            <ErrorBanner error={scrapeJobError} onDismiss={() => setScrapeJobError(null)} />
+          )}
+          {scrapeJob?.status === "failed" && scrapeJob.error_message && (
+            <ErrorBanner error={scrapeJob.error_message} />
+          )}
           {saveError && <ErrorBanner error={saveError} />}
 
           <div className="flex gap-2">
@@ -391,15 +472,15 @@ export default function ScrapeSourcesPage() {
         </CardBody>
       </Card>
 
-      {results && (
+      {scrapeJob?.status === "completed" && scrapeJob.result && (
         <Card>
           <CardHeader
             title="Last scrape result"
-            subtitle={`${results.total_facts_stored} fact(s) stored across ${results.results.length} URL(s)`}
+            subtitle={`${scrapeJob.result.total_facts_stored} fact(s) stored across ${scrapeJob.result.results.length} URL(s)`}
           />
 
           <CardBody className="space-y-2">
-            {results.results.map((r) => (
+            {scrapeJob.result.results.map((r) => (
               <div
                 key={r.url}
                 className="flex items-start justify-between gap-3 rounded-lg border border-ink-100 px-3 py-2 transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm"
