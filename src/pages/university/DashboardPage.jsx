@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const { data: queriesData } = useAsync(() => listActiveQueries(universityId), [universityId]);
   const { data: profilesData } = useAsync(() => listUniversityProfiles(universityId), [universityId]);
 
-  const percent = setupPercent(profile?.setup_status);
+  const percent = setupPercent(profile);
   const complete = profile?.setup_status?.setup_complete;
 
   const knowledgeFactCount = (sectionsData?.sections || []).reduce((sum, s) => sum + s.count, 0);
@@ -344,7 +344,7 @@ export default function DashboardPage() {
 
     {SETUP_STEPS.map((step) => {
 
-      const done = Boolean(profile.setup_status?.[step.key]);
+      const done = step.done(profile);
 
       return (
 

@@ -6,6 +6,92 @@ import Button from "./Button";
 import { Input } from "./Input";
 import Spinner from "./Spinner";
 
+/** Renders `**bold**` spans within a line of otherwise-plain text. */
+function renderInline(text, keyPrefix) {
+  return text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      return <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+/**
+ * Lightweight markdown-ish formatter for agent replies: turns "**bold**", "# headings",
+ * and "- "/"1. " lists into real elements instead of showing the raw symbols. ust enough to clean up what the agent actually produces.
+ */
+function FormattedMessage({ content }) {
+  const blocks = [];
+  let list = null;
+
+  const flushList = () => {
+    if (list) blocks.push(list);
+    list = null;
+  };
+
+  content.split("\n").forEach((line) => {
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    const bullet = line.match(/^[-*]\s+(.*)$/);
+    const ordered = line.match(/^\d+\.\s+(.*)$/);
+
+    if (heading) {
+      flushList();
+      blocks.push({ type: "heading", text: heading[2] });
+    } else if (bullet) {
+      if (!list || list.type !== "ul") {
+        flushList();
+        list = { type: "ul", items: [] };
+      }
+      list.items.push(bullet[1]);
+    } else if (ordered) {
+      if (!list || list.type !== "ol") {
+        flushList();
+        list = { type: "ol", items: [] };
+      }
+      list.items.push(ordered[1]);
+    } else if (line.trim() === "") {
+      flushList();
+    } else {
+      flushList();
+      blocks.push({ type: "text", text: line });
+    }
+  });
+  flushList();
+
+  return blocks.map((block, i) => {
+    if (block.type === "heading") {
+      return (
+        <p key={i} className="mb-1 mt-2 font-semibold first:mt-0">
+          {renderInline(block.text, i)}
+        </p>
+      );
+    }
+    if (block.type === "ul") {
+      return (
+        <ul key={i} className="my-1 list-disc space-y-0.5 pl-5">
+          {block.items.map((item, j) => (
+            <li key={j}>{renderInline(item, `${i}-${j}`)}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (block.type === "ol") {
+      return (
+        <ol key={i} className="my-1 list-decimal space-y-0.5 pl-5">
+          {block.items.map((item, j) => (
+            <li key={j}>{renderInline(item, `${i}-${j}`)}</li>
+          ))}
+        </ol>
+      );
+    }
+    return (
+      <p key={i} className="mb-1 last:mb-0">
+        {renderInline(block.text, i)}
+      </p>
+    );
+  });
+}
+
 export default function ChatThread({
   messages = [],
   onSend,
@@ -75,14 +161,18 @@ export default function ChatThread({
             >
               <div
                 className={clsx(
-                  "max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2 text-sm leading-relaxed",
+                  "max-w-[85%] break-words rounded-2xl px-4 py-2 text-sm leading-relaxed",
                   message.role === "assistant"
                     ? "bg-ink-100 text-ink-800"
-                    : "bg-brand-600 text-white",
+                    : "whitespace-pre-wrap bg-brand-600 text-white",
                   message.tone === "warning" && "bg-red-50 text-red-700"
                 )}
               >
-                {message.content}
+                {message.role === "assistant" ? (
+                  <FormattedMessage content={message.content} />
+                ) : (
+                  message.content
+                )}
               </div>
             </div>
           ))

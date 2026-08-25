@@ -28,6 +28,33 @@ import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 import { setupPercent } from "../../lib/university";
 
+function isValidUrl(value) {
+    try {
+        const url = new URL(value.trim());
+        return (url.protocol === "http:" || url.protocol === "https:") && url.hostname.includes(".");
+    } catch {
+        return false;
+    }
+}
+
+function isValidPhone(value) {
+    const trimmed = value.trim();
+    if (!/^\+?[0-9\s().-]+$/.test(trimmed)) return false;
+    const digits = trimmed.replace(/\D/g, "");
+    return digits.length >= 7 && digits.length <= 15;
+}
+
+function validateForm(form) {
+    const errors = {};
+    if (form.website_url.trim() && !isValidUrl(form.website_url)) {
+        errors.website_url = "Enter a valid URL, including https:// (e.g. https://www.university.edu)";
+    }
+    if (form.contact_phone.trim() && !isValidPhone(form.contact_phone)) {
+        errors.contact_phone = "Enter a valid phone number (7-15 digits)";
+    }
+    return errors;
+}
+
 const EMPTY_FORM = {
     location: "",
     tagline: "",
@@ -46,6 +73,7 @@ const EMPTY_FORM = {
 
 export default function SettingsProfilePage() {
     const [form, setForm] = useState(EMPTY_FORM);
+    const [formErrors, setFormErrors] = useState({});
     const [openSection, setOpenSection] = useState("program");
     const { data: profile, error: loadError, loading, refetch, setData: setProfile } = useAsync(
         universityAdminApi.getProfile,
@@ -75,16 +103,34 @@ export default function SettingsProfilePage() {
         universityAdminApi.updateProfile(payload)
     );
 
-    const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+    const update = (key) => (e) => {
+        const { value } = e.target;
+        setForm((f) => ({ ...f, [key]: value }));
+        setFormErrors((fe) => (fe[key] ? { ...fe, [key]: undefined } : fe));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const errors = validateForm(form);
+        if (Object.keys(errors).length) {
+            setFormErrors(errors);
+            setOpenSection(errors.website_url ? "program" : "contact");
+            toast.error(errors.website_url || errors.contact_phone);
+            return;
+        }
+        setFormErrors({});
+
         try {
             const res = await save(form);
             setProfile(res);
             toast.success("Profile saved");
         } catch (err) {
-            toast.error(err.message);
+            toast.error(
+                err.status >= 500
+                    ? "Something went wrong saving your profile. Please check your details and try again."
+                    : err.message
+            );
         }
     };
 
@@ -172,6 +218,7 @@ export default function SettingsProfilePage() {
                             <Field
                                 label="Website"
                                 hint="Official university website"
+                                error={formErrors.website_url}
                             >
                                 <div className="relative">
 
@@ -192,6 +239,7 @@ export default function SettingsProfilePage() {
                                         onChange={update("website_url")}
                                         placeholder="https://www.university.edu"
                                         className="pl-12"
+                                        error={formErrors.website_url}
                                     />
 
                                 </div>
@@ -328,6 +376,7 @@ export default function SettingsProfilePage() {
                             <Field
                                 label="Contact Phone"
                                 hint="Admissions helpline"
+                                error={formErrors.contact_phone}
                             >
 
                                 <div className="relative">
@@ -349,6 +398,7 @@ export default function SettingsProfilePage() {
                                         onChange={update("contact_phone")}
                                         placeholder="+1 (555) 123-4567"
                                         className="pl-12"
+                                        error={formErrors.contact_phone}
                                     />
 
                                 </div>
@@ -440,7 +490,8 @@ export default function SettingsProfilePage() {
                     title="Eligibility Criteria"
                     subtitle="Define the admission requirements for applicants."
                     status={
-                        form.eligibility_criteria.length
+                        form.eligibility_criteria.length &&
+                            form.eligibility_criteria.every((c) => c.criterion.trim() && c.detail.trim())
                             ? "Complete"
                             : "In Progress"
                     }
@@ -804,7 +855,7 @@ export default function SettingsProfilePage() {
                 </SectionCard>
 
                 <StickySaveBar
-                    progress={setupPercent(profile.setup_status)}
+                    progress={setupPercent(profile)}
                     saving={saving}
                 />
             </form>

@@ -108,15 +108,16 @@ export default function AutoDiscoverResultsModal({ jobId, open, onClose, onAppli
           </Select>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={CheckSquare}
-              onClick={selectAllVisible}
-              disabled={selectableUrls.length === 0}
-            >
-              Select all
-            </Button>
+            {selectableUrls.some((url) => !selected.has(url)) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={CheckSquare}
+                onClick={selectAllVisible}
+              >
+                Select all
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

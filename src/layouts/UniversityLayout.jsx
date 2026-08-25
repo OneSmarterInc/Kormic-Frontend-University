@@ -377,7 +377,7 @@ function BottomItem({ icon: Icon, label, to, disabled }) {
   );
 }
 function SignedInAs({ user, profile, activeUniversityId }) {
-  const percent = setupPercent(profile?.setup_status);
+  const percent = setupPercent(profile);
   return (
     <div
      className="

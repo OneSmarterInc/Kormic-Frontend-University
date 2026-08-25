@@ -14,6 +14,7 @@ import {
   getUniversityChatHistory,
   deleteUniversityChatHistory,
 } from "../../api/universityApi";
+import { getAgentName } from "../../api/universityAdminApi";
 
 import { useAction, useAsync } from "../../hooks/useAsync";
 
@@ -27,6 +28,8 @@ export default function AgentPreviewPage() {
     () => getUniversityChatHistory(universityId),
     [universityId]
   );
+
+  const { data: agentInfo } = useAsync(getAgentName, [universityId]);
 
   useEffect(() => {
     if (!history) return;
@@ -126,7 +129,7 @@ export default function AgentPreviewPage() {
       >
         <CardHeader
           icon={Bot}
-          title={lastMeta?.agent_name || "Your agent (Nova2)"}
+          title={lastMeta?.agent_name || agentInfo?.agent_name || "Your agent"}
           subtitle="Every turn here is logged just like a real student conversation."
           action={
             <Button
