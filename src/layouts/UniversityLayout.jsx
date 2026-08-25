@@ -80,11 +80,11 @@ const NAV_GROUPS = [
         icon: BookOpenCheck,
       },
 
-      {
-        to: "questions",
-        label: "Question Log",
-        icon: History,
-      },
+      // {
+      //   to: "questions",
+      //   label: "Question Log",
+      //   icon: History,
+      // },
     ],
   },
 ];

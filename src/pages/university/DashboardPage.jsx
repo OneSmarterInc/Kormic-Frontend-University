@@ -39,12 +39,12 @@ const QUICK_LINKS = [
     description: "Answers resolved from escalations.",
     icon: BookOpenCheck,
   },
-  {
-    to: "questions",
-    label: "Question Log",
-    description: "Everything students have asked.",
-    icon: History,
-  },
+  // {
+  //   to: "questions",
+  //   label: "Question Log",
+  //   description: "Everything students have asked.",
+  //   icon: History,
+  // },
 ];
 
 function formatUpdatedAt(iso) {
