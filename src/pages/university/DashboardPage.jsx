@@ -240,7 +240,7 @@ export default function DashboardPage() {
 
              <div className="flex h-full items-end justify-end">
                <Link
-                 to={complete ? "profiles" : "settings/profile"}
+                 to={`/university/${universityId}/${complete ? "profiles" : "settings/profile"}`}
                  className="inline-flex h-8 items-center gap-1 rounded-md bg-white px-3 text-xs font-medium text-brand-700 shadow-sm transition hover:bg-gray-100"
                >
                  <ArrowRight className="h-3 w-3" />
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                const style = colorStyles[stat.color];
 
                return (
-                 <Link key={stat.title} to={stat.to}>
+                 <Link key={stat.title} to={`/university/${universityId}/${stat.to}`}>
                    <Card className="h-full rounded-xl p-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
 
                      <div className="flex items-center gap-3">
