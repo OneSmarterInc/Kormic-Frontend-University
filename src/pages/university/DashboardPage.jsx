@@ -319,7 +319,6 @@ export default function DashboardPage() {
            </div>
 
           {/* ================= SETUP CHECKLIST ================= */}
-          {/* ================= SETUP CHECKLIST ================= */}
 
 <Card className="overflow-hidden rounded-xl shadow-sm">
 

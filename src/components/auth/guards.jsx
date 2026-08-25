@@ -23,7 +23,7 @@ export function RequireRole({ role }) {
 export function RequireOwnUniversity() {
   const { user } = useAuth();
   const { universityId } = useParams();
-  if (universityId !== user.university_id) {
+  if (String(universityId) !== String(user.university_id)) {
     return <Navigate to={`/university/${user.university_id}/profiles`} replace />;
   }
   return <Outlet />;

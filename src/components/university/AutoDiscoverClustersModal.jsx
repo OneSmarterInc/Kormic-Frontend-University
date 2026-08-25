@@ -11,7 +11,7 @@ import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAsync, useAction } from "../../hooks/useAsync";
 import { knowledgeGroupLabel, knowledgeGroupTone } from "../../lib/knowledgeGroups";
 
-export default function AutoDiscoverClustersModal({ jobId, open, onClose }) {
+export default function AutoDiscoverClustersModal({ jobId, open, onClose, onUrlsChanged }) {
   const { data, loading, error, refetch } = useAsync(
     () => universityAdminApi.getAutoDiscoverClusters(jobId),
     [jobId, open],
@@ -56,6 +56,7 @@ export default function AutoDiscoverClustersModal({ jobId, open, onClose }) {
                 jobId={jobId}
                 cluster={cluster}
                 onApproved={refetch}
+                onUrlsChanged={onUrlsChanged}
               />
             ))}
           </div>
@@ -65,7 +66,7 @@ export default function AutoDiscoverClustersModal({ jobId, open, onClose }) {
   );
 }
 
-function ClusterCard({ jobId, cluster, onApproved }) {
+function ClusterCard({ jobId, cluster, onApproved, onUrlsChanged }) {
   const [scrapeResult, setScrapeResult] = useState(null);
   const { execute, loading, error } = useAction(() =>
     universityAdminApi.approveAutoDiscoverCluster(jobId, cluster.category)
@@ -81,6 +82,7 @@ function ClusterCard({ jobId, cluster, onApproved }) {
         `${res.scrape_result?.total_facts_stored ?? 0} fact(s) stored for ${cluster.label}`
       );
       onApproved();
+      onUrlsChanged?.();
     } catch (err) {
       toast.error(err.message);
     }

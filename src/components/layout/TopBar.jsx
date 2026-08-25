@@ -112,15 +112,23 @@ export default function TopBar() {
 
               {/* User */}
 
-              <span
-                className="
-                  text-sm
-                  font-semibold
-                  text-ink-800
-                "
-              >
-                {user.name}
-              </span>
+              <div className="flex flex-col items-end leading-tight">
+                <span
+                  className="
+                    text-sm
+                    font-semibold
+                    text-ink-800
+                  "
+                >
+                  {user.name}
+                </span>
+
+                {user.email && (
+                  <span className="text-xs text-ink-400">
+                    {user.email}
+                  </span>
+                )}
+              </div>
 
               {/* University Badge */}
 

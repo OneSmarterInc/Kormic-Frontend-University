@@ -232,11 +232,13 @@ export default function UniversityLayout() {
           <BottomItem
             icon={Settings}
             label="Settings"
+            to={`/university/${activeUniversityId}/settings/profile`}
           />
 
           <BottomItem
             icon={HelpCircle}
             label="Help & Support"
+            disabled
           />
 
         </div>
@@ -308,9 +310,50 @@ function NavItem({ item, activeUniversityId }) {
     </NavLink>
   );
 }
-function BottomItem({ icon: Icon, label }) {
+function BottomItem({ icon: Icon, label, to, disabled }) {
+  const content = (
+    <>
+      <Icon
+        className="
+          h-5
+          w-5
+          transition-transform
+          duration-300
+          group-hover:scale-110
+        "
+      />
+
+      {label}
+    </>
+  );
+
+  if (disabled) {
+    return (
+      <div
+        title="Coming soon"
+        className="
+          group
+          flex
+          w-full
+          cursor-not-allowed
+          items-center
+          gap-4
+          rounded-xl
+          px-4
+          py-3
+          text-sm
+          font-medium
+          text-white/30
+        "
+      >
+        {content}
+      </div>
+    );
+  }
+
   return (
-    <button
+    <NavLink
+      to={to}
       className="
         group
         flex
@@ -329,18 +372,8 @@ function BottomItem({ icon: Icon, label }) {
         hover:text-white
       "
     >
-      <Icon
-        className="
-          h-5
-          w-5
-          transition-transform
-          duration-300
-          group-hover:scale-110
-        "
-      />
-
-      {label}
-    </button>
+      {content}
+    </NavLink>
   );
 }
 function SignedInAs({ user, profile, activeUniversityId }) {
@@ -363,7 +396,10 @@ function SignedInAs({ user, profile, activeUniversityId }) {
      >
       <p className="text-xs font-medium text-ink-400">Signed in as</p>
       <p className="mt-0.5 truncate text-sm font-semibold text-ink-900">{user.name}</p>
-      <p className="truncate text-xs text-ink-500">{profile?.name || activeUniversityId}</p>
+      {user.email && (
+        <p className="truncate text-xs text-ink-500">{user.email}</p>
+      )}
+      <p className="mt-1 truncate text-xs text-ink-500">{profile?.name || activeUniversityId}</p>
       {profile?.agent_name && (
         <p className="mt-1.5 flex items-center gap-1 truncate text-xs text-brand-600">
           <Sparkles className="h-3 w-3 shrink-0" />

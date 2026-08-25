@@ -525,6 +525,7 @@ export default function ScrapeSourcesPage() {
           jobId={job.id}
           open={showClusters}
           onClose={() => setShowClusters(false)}
+          onUrlsChanged={refetch}
         />
       )}
     </div>
