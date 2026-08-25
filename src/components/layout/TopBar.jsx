@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Bell,
+  Building2,
   LayoutDashboard,
   LogOut,
 } from "lucide-react";
@@ -10,7 +11,7 @@ import Badge from "../common/Badge";
 import { useAuth } from "../../context/AuthContext";
 import { roleHome } from "../../lib/constants";
 
-export default function TopBar() {
+export default function TopBar({ universityName }) {
   const { status, user, logout } = useAuth();
 
   const navigate = useNavigate();
@@ -27,12 +28,13 @@ export default function TopBar() {
         className="
           sticky
           top-0
-          z-40
+          z-30
           h-12
           border-b
           border-ink-200
           bg-white
           shadow-sm
+          lg:ml-64
         "
       >
       <div
@@ -55,15 +57,21 @@ export default function TopBar() {
            "
          >
 
-          {/* {authenticated && (
-
-            <TopBarLink
-              to={roleHome(user)}
-              icon={LayoutDashboard}
-              label="Dashboard"
-            />
-
-          )} */}
+          {authenticated && universityName && (
+            <span
+              className="
+                flex
+                items-center
+                gap-1.5
+                text-sm
+                font-semibold
+                text-ink-800
+              "
+            >
+              <Building2 className="h-4 w-4 text-brand-600" />
+              {universityName}
+            </span>
+          )}
 
         </div>
 

@@ -10,6 +10,7 @@ import Badge from "../../components/common/Badge";
 import ErrorBanner from "../../components/common/ErrorBanner";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 import { KNOWLEDGE_GROUPS, knowledgeGroupLabel, knowledgeGroupTone } from "../../lib/knowledgeGroups";
@@ -304,20 +305,21 @@ function AddFactCard({ onCreated }) {
 
 function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }) {
   const meta = SOURCE_META[fact.source_type] || SOURCE_META.manual;
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { execute: remove, loading: deleting, error: deleteError } = useAction(() =>
     universityAdminApi.deleteKnowledge(fact.id)
   );
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete "${fact.topic}"? This can't be undone.`)) return;
-
     try {
       await remove();
       onDeleted(fact.id);
       toast.success("Fact deleted");
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setConfirmOpen(false);
     }
   };
 
@@ -388,7 +390,7 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
             variant="ghost"
             icon={Trash2}
             loading={deleting}
-            onClick={handleDelete}
+            onClick={() => setConfirmOpen(true)}
             className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-red-100 hover:text-red-600 focus:ring-2 focus:ring-red-200"
           />
         </div>
@@ -397,6 +399,17 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
       {deleteError && (
         <ErrorBanner error={deleteError} className="mt-3" />
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete fact?"
+        message={`Delete "${fact.topic}"? This can't be undone.`}
+        confirmLabel="Delete"
+        danger
+        loading={deleting}
+        onConfirm={handleDelete}
+        onClose={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

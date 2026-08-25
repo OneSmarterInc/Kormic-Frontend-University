@@ -97,6 +97,12 @@ export default function ProfilesListPage() {
                         {p.major || "—"}
                         {p.institution ? ` · ${p.institution}` : ""}
                       </p>
+
+                      {(p.student_email || p.email) && (
+                        <p className="truncate text-[11px] text-ink-400">
+                          {p.student_email || p.email}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -105,11 +111,23 @@ export default function ProfilesListPage() {
                   </Badge>
                 </div>
 
-                <dl className="mt-3 grid grid-cols-3 gap-2">
-                  <Stat label="GPA" value={p.gpa} />
-                  <Stat label="GRE-Q" value={p.gre_quant} />
-                  <Stat label="TOEFL" value={p.toefl} />
-                </dl>
+                {(() => {
+                  const stats = [
+                    ["GPA", p.gpa],
+                    ["GRE-Q", p.gre_quant],
+                    ["TOEFL", p.toefl],
+                  ].filter(([, value]) => value !== undefined && value !== null && value !== "");
+
+                  return (
+                    stats.length > 0 && (
+                      <dl className="mt-3 grid grid-cols-3 gap-2">
+                        {stats.map(([label, value]) => (
+                          <Stat key={label} label={label} value={value} />
+                        ))}
+                      </dl>
+                    )
+                  );
+                })()}
 
                 {previewText(p.ai_summary || p.summary) && (
                   <p className="mt-3 line-clamp-1 text-xs leading-relaxed text-ink-500">

@@ -25,6 +25,7 @@ import AutoDiscoverResultsModal from "../../components/university/AutoDiscoverRe
 import AutoDiscoverClustersModal from "../../components/university/AutoDiscoverClustersModal";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
+import { isValidUrl } from "../../lib/validators";
 
 const ACTIVE_JOB_STATUSES = ["queued", "running", "stop_requested"];
 const SCRAPE_ACTIVE_STATUSES = ["queued", "running"];
@@ -34,6 +35,7 @@ const DEFAULT_MAX_PAGES = 1;
 export default function ScrapeSourcesPage() {
   const [urls, setUrls] = useState([]);
   const [draft, setDraft] = useState("");
+  const [draftError, setDraftError] = useState("");
   const [selectedUrl, setSelectedUrl] = useState(null);
 
   const [job, setJob] = useState(null);
@@ -174,12 +176,25 @@ export default function ScrapeSourcesPage() {
 
     if (!value) return;
 
+    if (!isValidUrl(value)) {
+      const message = "Enter a valid URL, including https:// (e.g. https://university.edu/admissions)";
+      setDraftError(message);
+      toast.error(message);
+      return;
+    }
+
+    if (urls.includes(value)) {
+      setDraftError("This URL is already saved.");
+      return;
+    }
+
     const next = [...urls, value];
 
     try {
       const res = await persist(next);
       setUrls(res.scrape_urls);
       setDraft("");
+      setDraftError("");
     } catch (err) {
       toast.error(err.message);
     }
@@ -400,7 +415,10 @@ export default function ScrapeSourcesPage() {
           <div className="flex gap-2">
             <Input
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setDraftError("");
+              }}
               onKeyDown={(e) => {
                 if (e.key !== "Enter") return;
                 e.preventDefault();
@@ -408,6 +426,7 @@ export default function ScrapeSourcesPage() {
               }}
               placeholder="https://university.edu/admissions/international"
               type="url"
+              error={draftError}
             />
 
             <Button
@@ -419,6 +438,8 @@ export default function ScrapeSourcesPage() {
               Add
             </Button>
           </div>
+
+          {draftError && <p className="text-xs text-red-600">{draftError}</p>}
 
           {loading ? (
             <Spinner label="Loading saved URLs..." />

@@ -14,6 +14,7 @@ import {
   chatWithPresenter,
   getPresenterChatHistory,
 } from "../../api/universityApi";
+import { getAgentName } from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 
 export default function ProfileDetailPage() {
@@ -23,6 +24,8 @@ export default function ProfileDetailPage() {
     () => listUniversityProfiles(universityId),
     [universityId]
   );
+
+  const { data: agentInfo } = useAsync(getAgentName, [universityId]);
 
   const profile =
     data?.profiles?.find((p) => p.profile_id === studentId) ?? null;
@@ -60,13 +63,14 @@ export default function ProfileDetailPage() {
         <PresenterChatCard
           universityId={universityId}
           studentId={studentId}
+          agentName={agentInfo?.agent_name}
         />
       </div>
     </div>
   );
 }
 
-function PresenterChatCard({ universityId, studentId }) {
+function PresenterChatCard({ universityId, studentId, agentName }) {
   const [messages, setMessages] = useState([]);
 
   const { data: history, loading: historyLoading } = useAsync(
@@ -124,7 +128,7 @@ function PresenterChatCard({ universityId, studentId }) {
     <Card className="overflow-hidden transition-all h-full duration-300">
       <CardHeader
         icon={MessagesSquare}
-        title="Ask Nova2 about this student"
+        title={agentName ? `Ask ${agentName} about this student` : "Ask your agent about this student"}
         subtitle="Ask honest questions about this interested candidate and get a quick assessment of their fit for your program."
       />
 

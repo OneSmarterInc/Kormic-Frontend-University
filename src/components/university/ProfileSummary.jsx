@@ -89,7 +89,7 @@ export default function ProfileSummary({ profile }) {
   }
 
   const name = pick(profile, "profile.name", "name") || studentId;
-  const email = pick(profile, "profile.email", "email");
+  const email = pick(profile, "student_email", "profile.student_email", "profile.email", "email");
   const skills =
     pick(profile, "skills.all_skills") ||
     profile.skills ||
@@ -186,9 +186,11 @@ export default function ProfileSummary({ profile }) {
           <div className="space-y-2">
             {projects.slice(0, 5).map((project, i) => (
               <div key={i} className="rounded-lg border border-ink-100 px-3 py-2">
-                <p className="text-xs font-semibold text-ink-800">
-                  {project.title}
-                </p>
+                {project.title && (
+                  <p className="text-xs font-semibold text-ink-800">
+                    {project.title}
+                  </p>
+                )}
 
                 {project.description && (
                   <p className="mt-0.5 text-xs text-ink-500">

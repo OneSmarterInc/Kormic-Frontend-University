@@ -104,7 +104,7 @@ export default function UniversityLayout() {
 
       {/* Header */}
 
-      <TopBar />
+      <TopBar universityName={profile?.name} />
 
       {/* Sidebar */}
 
@@ -229,11 +229,11 @@ export default function UniversityLayout() {
           "
         >
 
-          <BottomItem
+          {/* <BottomItem
             icon={Settings}
             label="Settings"
             to={`/university/${activeUniversityId}/settings/profile`}
-          />
+          /> */}
 
           <BottomItem
             icon={HelpCircle}

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { RequireAuth, RequireEnrollable, RequireOwnUniversity, RequireRole } from "./components/auth/guards";
 
 import LandingPage from "./pages/LandingPage";
+import AccessRestrictedPage from "./pages/AccessRestrictedPage";
 import TotpEnrollPage from "./pages/auth/TotpEnrollPage";
 import UniversityLoginPage from "./pages/auth/UniversityLoginPage";
 import UniversityRegisterPage from "./pages/auth/UniversityRegisterPage";
@@ -40,6 +41,7 @@ function App() {
         />
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/access-restricted" element={<AccessRestrictedPage />} />
           <Route path="/login" element={<UniversityLoginPage />} />
           <Route path="/register" element={<UniversityRegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

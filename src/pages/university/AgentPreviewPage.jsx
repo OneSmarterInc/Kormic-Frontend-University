@@ -8,6 +8,7 @@ import Card, { CardBody, CardHeader } from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Spinner from "../../components/common/Spinner";
 import ChatThread from "../../components/common/ChatThread";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 import {
   chatWithUniversityAgent,
@@ -23,6 +24,7 @@ export default function AgentPreviewPage() {
 
   const [messages, setMessages] = useState([]);
   const [lastMeta, setLastMeta] = useState(null);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const { data: history, loading: historyLoading } = useAsync(
     () => getUniversityChatHistory(universityId),
@@ -51,8 +53,6 @@ export default function AgentPreviewPage() {
   );
 
   const handleClearHistory = async () => {
-    if (!window.confirm("Clear this conversation? This can't be undone.")) return;
-
     try {
       await clearHistory();
       setMessages([]);
@@ -60,6 +60,8 @@ export default function AgentPreviewPage() {
       toast.success("Conversation cleared");
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setConfirmClearOpen(false);
     }
   };
 
@@ -139,7 +141,7 @@ export default function AgentPreviewPage() {
               icon={Trash2}
               loading={clearing}
               disabled={messages.length === 0}
-              onClick={handleClearHistory}
+              onClick={() => setConfirmClearOpen(true)}
             >
               Clear conversation
             </Button>
@@ -167,6 +169,17 @@ export default function AgentPreviewPage() {
       </Card>
 
       <div className="h-4" />
+
+      <ConfirmDialog
+        open={confirmClearOpen}
+        title="Clear conversation?"
+        message="This can't be undone."
+        confirmLabel="Clear"
+        danger
+        loading={clearing}
+        onConfirm={handleClearHistory}
+        onClose={() => setConfirmClearOpen(false)}
+      />
     </div>
   );
 }
