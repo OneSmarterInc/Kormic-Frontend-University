@@ -6,7 +6,10 @@ import {
   setAccessToken,
 } from "../lib/tokenStorage";
 
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(
+  /\/+$/,
+  ""
+);
 
 const client = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -72,15 +75,25 @@ client.interceptors.response.use(
       }
     }
 
+    const status = error.response?.status ?? null;
+    const rawMessage =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
+      error.message ||
+      "Something went wrong. Please try again.";
+
+    // 5xx bodies (and network/timeout failures with no response at all) can contain raw
+    // backend exception text — never show that to the user, only 4xx messages are meant
+    // to be user-facing (validation errors, "invalid credentials", etc).
+    const isServerOrNetworkError = status === null || status >= 500;
+
     const normalized = {
       isApiError: true,
-      status: error.response?.status ?? null,
-      message:
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        error.message ||
-        "Something went wrong. Please try again.",
+      status,
+      message: isServerOrNetworkError
+        ? "Something went wrong on our end. Please try again in a moment."
+        : rawMessage,
       data: error.response?.data ?? null,
       original: error,
     };

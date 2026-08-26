@@ -1,11 +1,5 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import {
-  Bell,
-  Building2,
-  LayoutDashboard,
-  LogOut,
-} from "lucide-react";
-import clsx from "clsx";
+import { Link, useNavigate } from "react-router-dom";
+import { Building2, LogOut } from "lucide-react";
 
 import Badge from "../common/Badge";
 import { useAuth } from "../../context/AuthContext";
@@ -216,50 +210,5 @@ export default function TopBar({ universityName }) {
       </div>
 
     </header>
-  );
-}
-
-function TopBarLink({ to, icon: Icon, label }) {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        clsx(
-          `
-          flex
-          items-center
-          gap-2
-          rounded-lg
-          px-3 py-1.5
-          text-[13px]
-          font-semibold
-          transition-all
-          duration-300
-          `,
-          isActive
-            ? `
-              bg-brand-50
-              text-brand-700
-              border
-              border-brand-200
-              shadow-sm
-            `
-            : `
-              text-ink-500
-              hover:bg-ink-100
-              hover:text-brand-700
-            `
-        )
-      }
-    >
-      <Icon
-        className="
-          h-4
-          w-4
-        "
-      />
-
-      <span>{label}</span>
-    </NavLink>
   );
 }

@@ -111,11 +111,7 @@ export default function SettingsProfilePage() {
             setProfile(res);
             toast.success("Profile saved");
         } catch (err) {
-            toast.error(
-                err.status >= 500
-                    ? "Something went wrong saving your profile. Please check your details and try again."
-                    : err.message
-            );
+            toast.error(err.message);
         }
     };
 

@@ -16,7 +16,7 @@ export function RequireAuth() {
 
 export function RequireRole({ role }) {
   const { user } = useAuth();
-  if (user.role !== role) return <Navigate to="/" replace />;
+  if (user.role !== role) return <Navigate to={roleHome(user)} replace />;
   return <Outlet />;
 }
 

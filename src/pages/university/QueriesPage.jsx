@@ -127,6 +127,7 @@ export default function QueriesPage() {
 
 function QueryCard({ query, onRespond, onIgnore, onDelete }) {
   const resolved = query.display_status === "answered";
+  const ignored = query.display_status === "ignored";
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -199,7 +200,7 @@ function QueryCard({ query, onRespond, onIgnore, onDelete }) {
             {resolved ? "Edit answer" : "Answer"}
           </Button>
 
-          {!resolved && (
+          {!resolved && !ignored && (
             <Button variant="secondary" size="sm" icon={EyeOff} onClick={onIgnore}>
               Ignore
             </Button>

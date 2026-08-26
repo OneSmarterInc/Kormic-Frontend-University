@@ -84,6 +84,17 @@ export function AuthProvider({ children }) {
     return res.user;
   }, []);
 
+  // POST /auth/totp/verify-enrollment/ now returns the same {access, refresh, user}
+  // pair as login, alongside backup_codes — store the tokens so newly-enrolled
+  // officers get a refresh token instead of being stuck on an access-only session.
+  const completeTotpEnrollment = useCallback((res) => {
+    setAccessToken(res.access);
+    setRefreshToken(res.refresh);
+    setCachedUser(res.user);
+    setUser(res.user);
+    setStatus(statusForUser(res.user));
+  }, []);
+
   const refreshUser = useCallback(async () => {
     const freshUser = await authApi.me();
     setCachedUser(freshUser);
@@ -108,7 +119,16 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, status, registerAccount, loginWithPassword, completeTotpLogin, refreshUser, logout }}
+      value={{
+        user,
+        status,
+        registerAccount,
+        loginWithPassword,
+        completeTotpLogin,
+        completeTotpEnrollment,
+        refreshUser,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

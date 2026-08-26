@@ -11,7 +11,6 @@ import {
   Sparkles,
   Split,
   Users,
-  Settings,
   HelpCircle,
 } from "lucide-react";
 
@@ -228,12 +227,6 @@ export default function UniversityLayout() {
             space-y-1
           "
         >
-
-          {/* <BottomItem
-            icon={Settings}
-            label="Settings"
-            to={`/university/${activeUniversityId}/settings/profile`}
-          /> */}
 
           <BottomItem
             icon={HelpCircle}

@@ -24,12 +24,14 @@ export default function Badge({ tone = "neutral", children, className }) {
 
 export function matchTierTone(tier) {
   switch (tier) {
-    case "safety":
+    case "strong_fit":
       return "success";
-    case "target":
+    case "good_fit":
       return "brand";
-    case "reach":
+    case "reach_fit":
       return "warning";
+    case "unlikely_fit":
+      return "danger";
     case "unassessed":
       return "neutral";
     default:

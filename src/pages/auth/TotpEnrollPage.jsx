@@ -15,7 +15,7 @@ import * as authApi from "../../api/authApi";
 import { roleHome } from "../../lib/constants";
 
 export default function TotpEnrollPage() {
-  const { refreshUser } = useAuth();
+  const { refreshUser, completeTotpEnrollment } = useAuth();
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [backupCodes, setBackupCodes] = useState(null);
@@ -33,6 +33,7 @@ export default function TotpEnrollPage() {
     e.preventDefault();
     try {
       const res = await confirm();
+      completeTotpEnrollment(res);
       setBackupCodes(res.backup_codes);
     } catch {
       // surfaced via confirmError
