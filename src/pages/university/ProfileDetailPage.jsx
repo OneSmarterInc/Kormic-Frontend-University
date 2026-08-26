@@ -53,11 +53,11 @@ export default function ProfileDetailPage() {
           />
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
-          <Card>
+        <div className="grid gap-6 lg:h-[calc(100vh-9rem)] lg:min-h-[420px] lg:grid-cols-[1.25fr_0.75fr]">
+          <Card className="lg:flex lg:h-full lg:flex-col">
             {/* <CardHeader icon={UserRound} title="Profile" /> */}
 
-            <CardBody>
+            <CardBody className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
               {loading ? (
                 <Spinner label="Loading profile..." />
               ) : error ? (
@@ -139,25 +139,26 @@ function PresenterChatCard({ universityId, studentId, agentName }) {
   };
 
   return (
-    <Card className="overflow-hidden transition-all h-full duration-300">
+    <Card className="flex h-full flex-col overflow-hidden transition-all duration-300">
       <CardHeader
         icon={MessagesSquare}
         title={agentName ? `Ask ${agentName} about this student` : "Ask your agent about this student"}
         subtitle="Ask honest questions about this interested candidate and get a quick assessment of their fit for your program."
       />
 
-      <CardBody className="p-0">
+      <CardBody className="min-h-0 flex-1 p-0">
         {historyLoading && messages.length === 0 ? (
-          <div className="flex h-[380px] items-center justify-center">
+          <div className="flex h-full items-center justify-center">
             <Spinner label="Loading conversation..." />
           </div>
         ) : historyError && messages.length === 0 ? (
-          <div className="flex h-[380px] items-center justify-center p-6">
+          <div className="flex h-full items-center justify-center p-6">
             <ErrorBanner error={historyError} onDismiss={refetchHistory} />
           </div>
         ) : (
           <ChatThread
             compact
+            heightClass="h-full"
             messages={messages}
             onSend={handleSend}
             loading={loading}

@@ -16,6 +16,12 @@ const SIZES = {
   lg: "px-5 py-2.5 text-sm",
 };
 
+const ICON_SIZES = {
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
+};
+
 export default function Button({
   children,
   variant = "primary",
@@ -42,9 +48,9 @@ export default function Button({
       {...rest}
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className={clsx(ICON_SIZES[size] || ICON_SIZES.md, "animate-spin")} />
       ) : (
-        Icon && <Icon className="h-4 w-4" />
+        Icon && <Icon className={ICON_SIZES[size] || ICON_SIZES.md} />
       )}
       {children}
     </button>

@@ -228,7 +228,7 @@ export default function ChatThread({
   const hasMessages = messages.length > 0;
 
   const finalHeightClass =
-    heightClass || (compact ? "h-[420px]" : "h-[560px]");
+    heightClass || (compact ? "h-[420px] max-h-[70vh]" : "h-[560px] max-h-[75vh]");
 
   return (
     <div className={clsx("flex min-h-0 flex-col bg-white", finalHeightClass)}>
@@ -270,7 +270,7 @@ export default function ChatThread({
                   message.role === "assistant"
                     ? "bg-ink-100 text-ink-800"
                     : "whitespace-pre-wrap bg-brand-600 text-white",
-                  message.tone === "warning" && "bg-red-50 text-red-700"
+                  message.tone === "warning" && "bg-amber-50 text-amber-700"
                 )}
               >
                 {message.role === "assistant" ? (

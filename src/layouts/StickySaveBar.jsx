@@ -5,9 +5,9 @@ export default function StickySaveBar({ progress, saving }) {
   return (
     <div className="sticky bottom-0 left-0 right-0 z-50 border-t border-ink-200 bg-white/90 backdrop-blur">
 
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
 
-        <div className="flex-1 max-w-sm">
+        <div className="min-w-[200px] flex-1 max-w-sm">
 
           <div className="mb-2 flex justify-between">
 

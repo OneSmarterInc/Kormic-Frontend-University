@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Building2, LogOut } from "lucide-react";
+import clsx from "clsx";
 
 import Badge from "../common/Badge";
 import { useAuth } from "../../context/AuthContext";
 import { roleHome } from "../../lib/constants";
 
-export default function TopBar({ universityName }) {
+export default function TopBar({ universityName, withSidebar = false }) {
   const { status, user, logout } = useAuth();
 
   const navigate = useNavigate();
@@ -19,17 +20,10 @@ export default function TopBar({ universityName }) {
 
   return (
     <header
-        className="
-          sticky
-          top-0
-          z-30
-          h-12
-          border-b
-          border-ink-200
-          bg-white
-          shadow-sm
-          lg:ml-64
-        "
+        className={clsx(
+          "sticky top-0 z-30 h-12 border-b border-ink-200 bg-white shadow-sm",
+          withSidebar && "lg:ml-64"
+        )}
       >
       <div
         className="
@@ -37,8 +31,9 @@ export default function TopBar({ universityName }) {
           h-full
           items-center
           justify-between
+          gap-3
           px-4
-          
+
         "
       >
 
@@ -46,7 +41,7 @@ export default function TopBar({ universityName }) {
 
         <div
            className="
-             flex items-center flex-1
+             flex min-w-0 flex-1 items-center
             pl-3
            "
          >
@@ -55,6 +50,7 @@ export default function TopBar({ universityName }) {
             <span
               className="
                 flex
+                min-w-0
                 items-center
                 gap-1.5
                 text-sm
@@ -62,8 +58,8 @@ export default function TopBar({ universityName }) {
                 text-ink-800
               "
             >
-              <Building2 className="h-4 w-4 text-brand-600" />
-              {universityName}
+              <Building2 className="h-4 w-4 shrink-0 text-brand-600" />
+              <span className="truncate">{universityName}</span>
             </span>
           )}
 
@@ -74,9 +70,11 @@ export default function TopBar({ universityName }) {
         <div
           className="
             flex
+            shrink-0
             items-center
             justify-end
-            gap-6
+            gap-3
+            sm:gap-6
           "
         >
 
@@ -114,9 +112,12 @@ export default function TopBar({ universityName }) {
 
               {/* User */}
 
-              <div className="flex flex-col items-end leading-tight">
+              <div className="hidden min-w-0 max-w-[160px] flex-col items-end leading-tight sm:flex">
                 <span
                   className="
+                    w-full
+                    truncate
+                    text-right
                     text-sm
                     font-semibold
                     text-ink-800
@@ -126,7 +127,7 @@ export default function TopBar({ universityName }) {
                 </span>
 
                 {user.email && (
-                  <span className="text-xs text-ink-400">
+                  <span className="w-full truncate text-right text-xs text-ink-400">
                     {user.email}
                   </span>
                 )}
@@ -134,28 +135,31 @@ export default function TopBar({ universityName }) {
 
               {/* University Badge */}
 
-              <Badge
-                tone="brand"
-                className="
-                  rounded-full
-                  px-3
-                  py-1
-                  text-xs
-                  font-semibold
-                  capitalize
-                "
-              >
-                {user.role}
-              </Badge>
+              <span className="hidden sm:inline-flex">
+                <Badge
+                  tone="brand"
+                  className="
+                    rounded-full
+                    px-3
+                    py-1
+                    text-xs
+                    font-semibold
+                    capitalize
+                  "
+                >
+                  {user.role}
+                </Badge>
+              </span>
 
               {/* Divider */}
 
-              <div className="h-6 w-px bg-ink-200" />
+              <div className="hidden h-6 w-px bg-ink-200 sm:block" />
 
               {/* Logout */}
 
               <button
                 onClick={handleLogout}
+                aria-label="Log out"
                 className="
                   flex
                   items-center
@@ -172,9 +176,9 @@ export default function TopBar({ universityName }) {
                 "
               >
 
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-3.5 w-3.5 shrink-0" />
 
-                Log out
+                <span className="hidden sm:inline">Log out</span>
 
               </button>
 

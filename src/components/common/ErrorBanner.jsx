@@ -19,6 +19,7 @@ export default function ErrorBanner({ error, onDismiss, className = "" }) {
         <button
           type="button"
           onClick={onDismiss}
+          aria-label="Dismiss"
           className="shrink-0 rounded p-0.5 text-red-500 hover:bg-red-100"
         >
           <X className="h-3.5 w-3.5" />

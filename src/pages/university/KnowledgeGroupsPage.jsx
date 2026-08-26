@@ -12,6 +12,7 @@ import GroupKnowledgeModal from "../../components/university/GroupKnowledgeModal
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 import { knowledgeGroupTone } from "../../lib/knowledgeGroups";
+import { formatDateTime } from "../../lib/text";
 
 export default function KnowledgeGroupsPage() {
   const { data, loading, error, refetch, setData } = useAsync(
@@ -135,7 +136,7 @@ function GroupCard({ group, onUpdated, onViewList }) {
             </Button>
             {group.updated_at && (
               <span className="text-xs text-ink-400">
-                Updated {group.updated_at.slice(0, 19).replace("T", " ")}
+                Updated {formatDateTime(group.updated_at)}
               </span>
             )}
           </div>

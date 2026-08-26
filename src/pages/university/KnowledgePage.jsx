@@ -8,6 +8,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Badge from "../../components/common/Badge";
 import { listVerifiedKnowledge } from "../../api/universityApi";
 import { useAsync } from "../../hooks/useAsync";
+import { formatDateTime } from "../../lib/text";
 
 export default function KnowledgePage() {
   const { universityId } = useParams();
@@ -45,7 +46,7 @@ export default function KnowledgePage() {
                 <Badge tone="success">verified</Badge>
                 <span className="text-xs text-ink-400">#{a.query_id}</span>
                 <span className="text-xs text-ink-400">
-                  synced {a.synced_at?.slice(0, 19).replace("T", " ")}
+                  synced {formatDateTime(a.synced_at)}
                 </span>
               </div>
               <p className="text-sm font-medium text-ink-900">{a.question}</p>

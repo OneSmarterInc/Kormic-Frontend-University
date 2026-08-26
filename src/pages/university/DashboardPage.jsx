@@ -19,6 +19,7 @@ import { getProfile, getKnowledgeSections } from "../../api/universityAdminApi";
 import { listActiveQueries, listUniversityProfiles } from "../../api/universityApi";
 import { useAsync } from "../../hooks/useAsync";
 import { SETUP_STEPS, setupPercent } from "../../lib/university";
+import { formatDateTime } from "../../lib/text";
 
 const QUICK_LINKS = [
   {
@@ -46,18 +47,6 @@ const QUICK_LINKS = [
   //   icon: History,
   // },
 ];
-
-function formatUpdatedAt(iso) {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export default function DashboardPage() {
   const { universityId } = useParams();
@@ -139,7 +128,7 @@ export default function DashboardPage() {
             <div>
               <p className="text-[13px] text-ink-500">Last Updated</p>
               <p className="font-semibold text-ink-900">
-                {formatUpdatedAt(profile?.updated_at)}
+                {formatDateTime(profile?.updated_at)}
               </p>
             </div>
           </div>
@@ -204,7 +193,7 @@ export default function DashboardPage() {
 
                      <span className="text-white/60">
 
-                       Updated {formatUpdatedAt(profile.updated_at)}
+                       Updated {formatDateTime(profile.updated_at)}
 
                      </span>
 

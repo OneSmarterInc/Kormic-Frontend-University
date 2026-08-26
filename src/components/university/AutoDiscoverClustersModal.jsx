@@ -10,6 +10,7 @@ import Spinner from "../common/Spinner";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAsync, useAction } from "../../hooks/useAsync";
 import { knowledgeGroupLabel, knowledgeGroupTone } from "../../lib/knowledgeGroups";
+import { formatDateTime } from "../../lib/text";
 
 export default function AutoDiscoverClustersModal({ jobId, open, onClose, onUrlsChanged }) {
   const { data, loading, error, refetch } = useAsync(
@@ -118,9 +119,7 @@ function ClusterCard({ jobId, cluster, onApproved, onUrlsChanged }) {
           {approved && (
             <p className="mt-1.5 text-xs text-ink-400">
               Approved by {approved.approved_by}
-              {approved.approved_at
-                ? ` · ${approved.approved_at.slice(0, 19).replace("T", " ")}`
-                : ""}
+              {approved.approved_at ? ` · ${formatDateTime(approved.approved_at)}` : ""}
             </p>
           )}
         </div>

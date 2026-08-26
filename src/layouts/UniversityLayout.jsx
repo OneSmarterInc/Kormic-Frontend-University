@@ -103,7 +103,7 @@ export default function UniversityLayout() {
 
       {/* Header */}
 
-      <TopBar universityName={profile?.name} />
+      <TopBar universityName={profile?.name} withSidebar />
 
       {/* Sidebar */}
 

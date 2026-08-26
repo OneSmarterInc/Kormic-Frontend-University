@@ -6,7 +6,10 @@ export default function Card({ className, children, ...rest }) {
       className={clsx(
         `
         overflow-hidden
-       
+        rounded-xl
+        border
+        border-ink-100
+
         bg-white
 
         shadow-sm

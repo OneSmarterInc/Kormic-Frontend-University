@@ -264,13 +264,13 @@ export default function ProfileSummary({ profile }) {
             {Object.entries(assessments).map(([uniId, a]) => (
               <div
                 key={uniId}
-                className="flex items-center justify-between rounded-lg border border-ink-100 px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 px-3 py-2"
               >
-                <span className="text-xs font-medium text-ink-700">
+                <span className="min-w-0 truncate text-xs font-medium text-ink-700">
                   {uniId}
                 </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {a.match_score !== undefined && a.match_score !== null && (
                     <span className="text-xs text-ink-500">
                       {a.match_score}

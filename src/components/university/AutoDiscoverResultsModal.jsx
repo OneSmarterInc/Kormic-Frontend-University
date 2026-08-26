@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import clsx from "clsx";
 import { CheckSquare, Square } from "lucide-react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
@@ -92,7 +93,7 @@ export default function AutoDiscoverResultsModal({ jobId, open, onClose, onAppli
             Close
           </Button>
           <Button onClick={handleApply} loading={applying} disabled={selected.size === 0}>
-            Add {selected.size > 0 ? selected.size : ""} selected
+            Add {selected.size} selected
           </Button>
         </>
       }
@@ -157,14 +158,22 @@ export default function AutoDiscoverResultsModal({ jobId, open, onClose, onAppli
                       }`}
                     >
                       <input
+                        id={`discover-result-${r.id}`}
                         type="checkbox"
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-brand-600 focus:ring-brand-500/40 disabled:opacity-60"
                         checked={r.already_saved || selected.has(r.url)}
                         disabled={r.already_saved}
                         onChange={() => toggle(r.url)}
+                        aria-label={r.page_title || r.url}
                       />
 
-                      <div className="min-w-0 flex-1">
+                      <label
+                        htmlFor={`discover-result-${r.id}`}
+                        className={clsx(
+                          "min-w-0 flex-1",
+                          !r.already_saved && "cursor-pointer"
+                        )}
+                      >
                         <p className="truncate font-medium text-ink-700">
                           {r.page_title || r.url}
                         </p>
@@ -177,7 +186,7 @@ export default function AutoDiscoverResultsModal({ jobId, open, onClose, onAppli
                         >
                           {r.url}
                         </a>
-                      </div>
+                      </label>
 
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         {r.already_saved ? (

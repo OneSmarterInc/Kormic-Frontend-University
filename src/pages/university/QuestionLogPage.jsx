@@ -8,6 +8,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Badge from "../../components/common/Badge";
 import { listQuestionLog } from "../../api/universityApi";
 import { useAsync } from "../../hooks/useAsync";
+import { formatDateTime } from "../../lib/text";
 
 export default function QuestionLogPage() {
   const { universityId } = useParams();
@@ -70,7 +71,7 @@ export default function QuestionLogPage() {
                     </td>
 
                     <td className="truncate px-4 py-2.5 text-xs text-ink-400">
-                      {formatAskedDate(q.created_at)}
+                      {formatDateTime(q.created_at)}
                     </td>
                   </tr>
                 ))}
@@ -81,22 +82,4 @@ export default function QuestionLogPage() {
       )}
     </div>
   );
-}
-
-function formatAskedDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
