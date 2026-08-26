@@ -12,7 +12,7 @@ import { useAsync } from "../../hooks/useAsync";
 export default function KnowledgePage() {
   const { universityId } = useParams();
   const { data, loading, error, refetch } = useAsync(
-    () => listVerifiedKnowledge(universityId),
+    (signal) => listVerifiedKnowledge(universityId, signal),
     [universityId]
   );
 

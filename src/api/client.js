@@ -60,6 +60,11 @@ function requestRefresh() {
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Cancelled requests (AbortController, e.g. from useAsync on unmount/dep change)
+    // aren't real errors — let axios.isCancel() callers detect and ignore them instead
+    // of normalizing them into a user-facing error.
+    if (axios.isCancel(error)) return Promise.reject(error);
+
     const config = error.config;
     const isRefreshExempt = REFRESH_EXEMPT.some((path) => config?.url?.includes(path));
 

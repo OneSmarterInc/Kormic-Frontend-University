@@ -7,6 +7,10 @@ export function isValidUrl(value) {
   }
 }
 
+export function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function isValidPhone(value) {
   const trimmed = value.trim();
   if (!/^\+?[0-9\s().-]+$/.test(trimmed)) return false;

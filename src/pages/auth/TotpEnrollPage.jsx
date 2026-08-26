@@ -21,7 +21,7 @@ export default function TotpEnrollPage() {
   const [backupCodes, setBackupCodes] = useState(null);
 
   const { data: enrollment, loading: loadingEnrollment, error: enrollError } = useAsync(
-    () => authApi.totpEnroll(),
+    (signal) => authApi.totpEnroll(signal),
     []
   );
 

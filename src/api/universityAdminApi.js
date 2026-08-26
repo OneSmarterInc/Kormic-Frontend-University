@@ -1,7 +1,8 @@
 import client from "./client";
 
 /** GET /api/university-admin/profile/ */
-export const getProfile = () => client.get("/university-admin/profile/").then((r) => r.data);
+export const getProfile = (signal) =>
+  client.get("/university-admin/profile/", { signal }).then((r) => r.data);
 
 /** PATCH /api/university-admin/profile/ — send only the fields being changed */
 export const updateProfile = (payload) =>
@@ -12,16 +13,16 @@ export const getProfileCompletion = () =>
   client.get("/university-admin/profile/completion/").then((r) => r.data);
 
 /** GET /api/university-admin/agent-name/ */
-export const getAgentName = () =>
-  client.get("/university-admin/agent-name/").then((r) => r.data);
+export const getAgentName = (signal) =>
+  client.get("/university-admin/agent-name/", { signal }).then((r) => r.data);
 
 /** PATCH /api/university-admin/agent-name/ */
 export const updateAgentName = (agentName) =>
   client.patch("/university-admin/agent-name/", { agent_name: agentName }).then((r) => r.data);
 
 /** GET /api/university-admin/scrape-urls/ */
-export const getScrapeUrls = () =>
-  client.get("/university-admin/scrape-urls/").then((r) => r.data);
+export const getScrapeUrls = (signal) =>
+  client.get("/university-admin/scrape-urls/", { signal }).then((r) => r.data);
 
 /** PUT /api/university-admin/scrape-urls/ — replaces the whole list */
 export const setScrapeUrls = (scrapeUrls) =>
@@ -70,10 +71,11 @@ export const stopAutoDiscoverJob = (jobId) =>
  * GET /api/university-admin/scrape-urls/auto-discover/<job_id>/results/?mode=...
  * mode: "student_essential" (default) | "base_important" | "all"
  */
-export const getAutoDiscoverResults = (jobId, mode = "student_essential") =>
+export const getAutoDiscoverResults = (jobId, mode = "student_essential", signal) =>
   client
     .get(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/results/`, {
       params: { mode },
+      signal,
     })
     .then((r) => r.data);
 
@@ -94,9 +96,11 @@ export const applyAutoDiscoverResults = (jobId, { urls, replace = false }) =>
  * candidate pages grouped by category, with department/knowledge-group mapping and any
  * existing approval record per cluster.
  */
-export const getAutoDiscoverClusters = (jobId) =>
+export const getAutoDiscoverClusters = (jobId, signal) =>
   client
-    .get(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/clusters/`)
+    .get(`/university-admin/scrape-urls/auto-discover/${encodeURIComponent(jobId)}/clusters/`, {
+      signal,
+    })
     .then((r) => r.data);
 
 /**
@@ -115,7 +119,7 @@ export const approveAutoDiscoverCluster = (jobId, category) =>
     .then((r) => r.data);
 
 /** GET /api/university-admin/knowledge/ — optional ?section=<source_type>&source_url=<url>&group=<slug> */
-export const listKnowledge = ({ section, sourceUrl, group } = {}) =>
+export const listKnowledge = ({ section, sourceUrl, group } = {}, signal) =>
   client
     .get("/university-admin/knowledge/", {
       params: {
@@ -123,6 +127,7 @@ export const listKnowledge = ({ section, sourceUrl, group } = {}) =>
         ...(sourceUrl ? { source_url: sourceUrl } : {}),
         ...(group ? { group } : {}),
       },
+      signal,
     })
     .then((r) => r.data);
 
@@ -138,12 +143,12 @@ export const createKnowledge = ({ topic, content, confidence, group }) =>
     .then((r) => r.data);
 
 /** GET /api/university-admin/knowledge/sections/ — counts grouped by source_type */
-export const getKnowledgeSections = () =>
-  client.get("/university-admin/knowledge/sections/").then((r) => r.data);
+export const getKnowledgeSections = (signal) =>
+  client.get("/university-admin/knowledge/sections/", { signal }).then((r) => r.data);
 
 /** GET /api/university-admin/knowledge/urls/ — counts grouped by source_url (scraped facts only) */
-export const getKnowledgeSourceUrls = () =>
-  client.get("/university-admin/knowledge/urls/").then((r) => r.data);
+export const getKnowledgeSourceUrls = (signal) =>
+  client.get("/university-admin/knowledge/urls/", { signal }).then((r) => r.data);
 
 /** PATCH /api/university-admin/knowledge/<id>/ — only "manual"/"seed" facts are editable */
 export const updateKnowledge = (id, payload) =>
@@ -157,8 +162,8 @@ export const deleteKnowledge = (id) =>
  * GET /api/university-admin/knowledge-groups/ — the 4 default groups are lazily
  * created on first call, so no separate setup step is needed.
  */
-export const listKnowledgeGroups = () =>
-  client.get("/university-admin/knowledge-groups/").then((r) => r.data);
+export const listKnowledgeGroups = (signal) =>
+  client.get("/university-admin/knowledge-groups/", { signal }).then((r) => r.data);
 
 /** PATCH /api/university-admin/knowledge-groups/<slug>/ — send only the fields being changed */
 export const updateKnowledgeGroup = (slug, payload) =>
@@ -171,7 +176,7 @@ export const updateKnowledgeGroup = (slug, payload) =>
  * all of its facts in one call. 404s if <slug> isn't one of the four valid groups. Lazily
  * bootstraps the four default groups, same as listKnowledgeGroups.
  */
-export const getKnowledgeGroupDetail = (slug) =>
+export const getKnowledgeGroupDetail = (slug, signal) =>
   client
-    .get(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/knowledge/`)
+    .get(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/knowledge/`, { signal })
     .then((r) => r.data);

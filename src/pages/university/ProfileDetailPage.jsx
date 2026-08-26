@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, MessagesSquare, UserRound } from "lucide-react";
+import { ArrowLeft, MessagesSquare, UserX } from "lucide-react";
 
-import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody, CardHeader } from "../../components/common/Card";
 import Spinner from "../../components/common/Spinner";
 import ErrorBanner from "../../components/common/ErrorBanner";
+import EmptyState from "../../components/common/EmptyState";
 import ChatThread from "../../components/common/ChatThread";
 import ProfileSummary from "../../components/university/ProfileSummary";
 import {
-  listUniversityProfiles,
+  getUniversityProfile,
   chatWithPresenter,
   getPresenterChatHistory,
 } from "../../api/universityApi";
@@ -20,15 +20,14 @@ import { useAction, useAsync } from "../../hooks/useAsync";
 export default function ProfileDetailPage() {
   const { universityId, studentId } = useParams();
 
-  const { data, loading, error, refetch } = useAsync(
-    () => listUniversityProfiles(universityId),
-    [universityId]
+  const { data: profile, loading, error, refetch } = useAsync(
+    (signal) => getUniversityProfile(universityId, studentId, signal),
+    [universityId, studentId]
   );
 
   const { data: agentInfo } = useAsync(getAgentName, [universityId]);
 
-  const profile =
-    data?.profiles?.find((p) => p.profile_id === studentId) ?? null;
+  const notFound = error?.status === 404;
 
   return (
     <div className="space-y-6">
@@ -45,27 +44,37 @@ export default function ProfileDetailPage() {
         description="Officer view - profile detail and Q&A."
       /> */}
 
-      <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
+      {notFound ? (
         <Card>
-          {/* <CardHeader icon={UserRound} title="Profile" /> */}
-
-          <CardBody>
-            {loading ? (
-              <Spinner label="Loading profile..." />
-            ) : error ? (
-              <ErrorBanner error={error} onDismiss={refetch} />
-            ) : (
-              <ProfileSummary profile={profile} />
-            )}
-          </CardBody>
+          <EmptyState
+            icon={UserX}
+            title="Profile not found"
+            description="This student's profile doesn't exist anymore, or the link is out of date."
+          />
         </Card>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
+          <Card>
+            {/* <CardHeader icon={UserRound} title="Profile" /> */}
 
-        <PresenterChatCard
-          universityId={universityId}
-          studentId={studentId}
-          agentName={agentInfo?.agent_name}
-        />
-      </div>
+            <CardBody>
+              {loading ? (
+                <Spinner label="Loading profile..." />
+              ) : error ? (
+                <ErrorBanner error={error} onDismiss={refetch} />
+              ) : (
+                <ProfileSummary profile={profile} />
+              )}
+            </CardBody>
+          </Card>
+
+          <PresenterChatCard
+            universityId={universityId}
+            studentId={studentId}
+            agentName={agentInfo?.agent_name}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -73,8 +82,13 @@ export default function ProfileDetailPage() {
 function PresenterChatCard({ universityId, studentId, agentName }) {
   const [messages, setMessages] = useState([]);
 
-  const { data: history, loading: historyLoading } = useAsync(
-    () => getPresenterChatHistory(universityId, studentId),
+  const {
+    data: history,
+    loading: historyLoading,
+    error: historyError,
+    refetch: refetchHistory,
+  } = useAsync(
+    (signal) => getPresenterChatHistory(universityId, studentId, signal),
     [universityId, studentId]
   );
 
@@ -136,6 +150,10 @@ function PresenterChatCard({ universityId, studentId, agentName }) {
         {historyLoading && messages.length === 0 ? (
           <div className="flex h-[380px] items-center justify-center">
             <Spinner label="Loading conversation..." />
+          </div>
+        ) : historyError && messages.length === 0 ? (
+          <div className="flex h-[380px] items-center justify-center p-6">
+            <ErrorBanner error={historyError} onDismiss={refetchHistory} />
           </div>
         ) : (
           <ChatThread

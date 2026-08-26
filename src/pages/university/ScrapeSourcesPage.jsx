@@ -23,6 +23,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import AutoDiscoverResultsModal from "../../components/university/AutoDiscoverResultsModal";
 import AutoDiscoverClustersModal from "../../components/university/AutoDiscoverClustersModal";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 import { isValidUrl } from "../../lib/validators";
@@ -37,6 +38,7 @@ export default function ScrapeSourcesPage() {
   const [draft, setDraft] = useState("");
   const [draftError, setDraftError] = useState("");
   const [selectedUrl, setSelectedUrl] = useState(null);
+  const [removingUrl, setRemovingUrl] = useState(null);
 
   const [job, setJob] = useState(null);
   const [jobLoading, setJobLoading] = useState(true);
@@ -200,7 +202,8 @@ export default function ScrapeSourcesPage() {
     }
   };
 
-  const removeUrl = async (url) => {
+  const removeUrl = async () => {
+    const url = removingUrl;
     const next = urls.filter((u) => u !== url);
 
     try {
@@ -214,6 +217,8 @@ export default function ScrapeSourcesPage() {
       toast.success("URL removed");
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setRemovingUrl(null);
     }
   };
 
@@ -479,7 +484,7 @@ export default function ScrapeSourcesPage() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeUrl(url);
+                        setRemovingUrl(url);
                       }}
                       className="shrink-0 rounded p-1 text-ink-400 hover:bg-red-50 hover:text-red-600"
                     >
@@ -549,6 +554,17 @@ export default function ScrapeSourcesPage() {
           onUrlsChanged={refetch}
         />
       )}
+
+      <ConfirmDialog
+        open={!!removingUrl}
+        title="Remove URL?"
+        message={`Remove "${removingUrl}" from your saved URLs? This can't be undone.`}
+        confirmLabel="Remove"
+        danger
+        loading={saving}
+        onConfirm={removeUrl}
+        onClose={() => setRemovingUrl(null)}
+      />
     </div>
   );
 }

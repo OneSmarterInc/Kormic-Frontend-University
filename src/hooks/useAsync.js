@@ -1,29 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 /**
  * Runs `fn` whenever `deps` change, tracking loading/data/error state.
  * `enabled` lets callers skip the call (e.g. no student_id yet) without
- * juggling conditional hooks.
+ * juggling conditional hooks. `fn` receives an AbortSignal as its only
+ * argument — pass it through to the underlying API call (as `{ signal }` in
+ * the axios config) so a superseded request (rapid tab/filter switches,
+ * unmount mid-flight) is actually cancelled instead of just having its
+ * result discarded.
  */
 export function useAsync(fn, deps, { enabled = true } = {}) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(enabled);
   const requestId = useRef(0);
+  const controllerRef = useRef(null);
 
   const run = useCallback(() => {
+    controllerRef.current?.abort();
     if (!enabled) {
       setLoading(false);
       return;
     }
+    const controller = new AbortController();
+    controllerRef.current = controller;
     const id = ++requestId.current;
     setLoading(true);
     setError(null);
-    fn()
+    fn(controller.signal)
       .then((result) => {
         if (id === requestId.current) setData(result);
       })
       .catch((err) => {
+        if (axios.isCancel(err)) return;
         if (id === requestId.current) setError(err);
       })
       .finally(() => {
@@ -34,6 +44,7 @@ export function useAsync(fn, deps, { enabled = true } = {}) {
 
   useEffect(() => {
     run();
+    return () => controllerRef.current?.abort();
   }, [run]);
 
   return { data, error, loading, refetch: run, setData };

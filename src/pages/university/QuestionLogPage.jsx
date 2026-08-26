@@ -13,7 +13,7 @@ export default function QuestionLogPage() {
   const { universityId } = useParams();
 
   const { data, loading, error, refetch } = useAsync(
-    () => listQuestionLog(universityId),
+    (signal) => listQuestionLog(universityId, signal),
     [universityId]
   );
 

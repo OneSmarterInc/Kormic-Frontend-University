@@ -36,7 +36,7 @@ export default function AutoDiscoverResultsModal({ jobId, open, onClose, onAppli
   const [selected, setSelected] = useState(() => new Set());
 
   const { data, loading, error, refetch } = useAsync(
-    () => universityAdminApi.getAutoDiscoverResults(jobId, mode),
+    (signal) => universityAdminApi.getAutoDiscoverResults(jobId, mode, signal),
     [jobId, mode, open],
     { enabled: open && !!jobId }
   );

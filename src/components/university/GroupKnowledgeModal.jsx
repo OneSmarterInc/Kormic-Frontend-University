@@ -18,7 +18,7 @@ const SOURCE_LABELS = {
 
 export default function GroupKnowledgeModal({ slug, label, open, onClose }) {
   const { data, loading, error, refetch } = useAsync(
-    () => universityAdminApi.getKnowledgeGroupDetail(slug),
+    (signal) => universityAdminApi.getKnowledgeGroupDetail(slug, signal),
     [slug, open],
     { enabled: open && !!slug }
   );

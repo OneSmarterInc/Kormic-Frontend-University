@@ -13,7 +13,7 @@ import { knowledgeGroupLabel, knowledgeGroupTone } from "../../lib/knowledgeGrou
 
 export default function AutoDiscoverClustersModal({ jobId, open, onClose, onUrlsChanged }) {
   const { data, loading, error, refetch } = useAsync(
-    () => universityAdminApi.getAutoDiscoverClusters(jobId),
+    (signal) => universityAdminApi.getAutoDiscoverClusters(jobId, signal),
     [jobId, open],
     { enabled: open && !!jobId }
   );

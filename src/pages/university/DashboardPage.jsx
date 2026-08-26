@@ -70,8 +70,14 @@ export default function DashboardPage() {
   } = useAsync(getProfile, [universityId]);
 
   const { data: sectionsData } = useAsync(getKnowledgeSections, [universityId]);
-  const { data: queriesData } = useAsync(() => listActiveQueries(universityId), [universityId]);
-  const { data: profilesData } = useAsync(() => listUniversityProfiles(universityId), [universityId]);
+  const { data: queriesData } = useAsync(
+    (signal) => listActiveQueries(universityId, signal),
+    [universityId]
+  );
+  const { data: profilesData } = useAsync(
+    (signal) => listUniversityProfiles(universityId, signal),
+    [universityId]
+  );
 
   const percent = setupPercent(profile);
   const complete = profile?.setup_status?.setup_complete;
@@ -144,6 +150,11 @@ export default function DashboardPage() {
         <Spinner label="Loading dashboard..." />
       ) : error ? (
         <ErrorBanner error={error} onDismiss={refetch} />
+      ) : !profile ? (
+        <ErrorBanner
+          error="We couldn't load your profile. Please refresh the page."
+          onDismiss={refetch}
+        />
       ) : (
         <>
           {/* ================= HERO CARD ================= */}

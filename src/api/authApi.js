@@ -8,7 +8,8 @@ export const login = (email, password) =>
   client.post("/auth/login/", { email, password }).then((r) => r.data);
 
 /** POST /api/auth/totp/enroll/ — Authorization header attached automatically by the client */
-export const totpEnroll = () => client.post("/auth/totp/enroll/").then((r) => r.data);
+export const totpEnroll = (signal) =>
+  client.post("/auth/totp/enroll/", null, { signal }).then((r) => r.data);
 
 /** POST /api/auth/totp/verify-enrollment/ */
 export const totpVerifyEnrollment = (code) =>

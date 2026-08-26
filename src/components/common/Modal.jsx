@@ -9,21 +9,33 @@ const SIZES = {
   xl: "max-w-3xl",
 };
 
-export default function Modal({ open, onClose, title, children, footer, size = "md" }) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  size = "md",
+  disableClose = false,
+}) {
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === "Escape" && onClose?.();
+    const onKey = (e) => e.key === "Escape" && !disableClose && onClose?.();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, disableClose]);
 
   if (!open) return null;
+
+  const handleClose = () => {
+    if (!disableClose) onClose?.();
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-ink-900/40 backdrop-blur-[1px]"
-        onClick={onClose}
+        onClick={handleClose}
       />
       <div
         className={clsx(
@@ -35,8 +47,9 @@ export default function Modal({ open, onClose, title, children, footer, size = "
           <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
           <button
             type="button"
-            onClick={onClose}
-            className="rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-600"
+            onClick={handleClose}
+            disabled={disableClose}
+            className="rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <X className="h-4 w-4" />
           </button>

@@ -15,7 +15,7 @@ export default function ProfilesListPage() {
   const { universityId } = useParams();
 
   const { data, loading, error, refetch } = useAsync(
-    () => listUniversityProfiles(universityId),
+    (signal) => listUniversityProfiles(universityId, signal),
     [universityId]
   );
 

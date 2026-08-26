@@ -7,6 +7,7 @@ import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody, CardHeader } from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Spinner from "../../components/common/Spinner";
+import ErrorBanner from "../../components/common/ErrorBanner";
 import ChatThread from "../../components/common/ChatThread";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 
@@ -26,8 +27,8 @@ export default function AgentPreviewPage() {
   const [lastMeta, setLastMeta] = useState(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
-  const { data: history, loading: historyLoading } = useAsync(
-    () => getUniversityChatHistory(universityId),
+  const { data: history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useAsync(
+    (signal) => getUniversityChatHistory(universityId, signal),
     [universityId]
   );
 
@@ -152,6 +153,10 @@ export default function AgentPreviewPage() {
           {historyLoading && messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <Spinner label="Loading conversation..." />
+            </div>
+          ) : historyError && messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center p-6">
+              <ErrorBanner error={historyError} onDismiss={refetchHistory} />
             </div>
           ) : (
             <ChatThread

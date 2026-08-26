@@ -41,7 +41,7 @@ export default function QueriesPage() {
 
   const activeTab = TABS.find((t) => t.key === tab);
   const { data, loading, error, refetch } = useAsync(
-    () => activeTab.fetcher(universityId),
+    (signal) => activeTab.fetcher(universityId, signal),
     [universityId, tab]
   );
 

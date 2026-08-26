@@ -23,10 +23,10 @@ const SOURCE_META = {
   conversation: { tone: "warning", label: "Learned in chat" },
 };
 
-// Edit/Delete are shown for every fact regardless of source_type. Note the backend
-// still enforces manual/seed-only for PATCH/DELETE (§2.13/§2.14 of the API contract) —
-// attempting either on a scraped/conversation/human_verified fact returns a 400, which
-// surfaces via the ErrorBanner in EditFactForm / FactRow below.
+// Only manual/seed facts are editable/deletable per the backend (§2.13/§2.14 of the
+// API contract) — Edit/Delete are hidden for scraped/conversation/human_verified facts
+// so officers can't fill out a form that's guaranteed to 400 on submit.
+const EDITABLE_SOURCE_TYPES = ["manual", "seed"];
 
 export default function KnowledgeBasePage() {
   const [editingFactId, setEditingFactId] = useState(null);
@@ -39,7 +39,7 @@ export default function KnowledgeBasePage() {
   }, [section]);
 
   const { data, loading, error, refetch, setData } = useAsync(
-    () => universityAdminApi.listKnowledge({ section, sourceUrl }),
+    (signal) => universityAdminApi.listKnowledge({ section, sourceUrl }, signal),
     [section, sourceUrl]
   );
 
@@ -305,6 +305,7 @@ function AddFactCard({ onCreated }) {
 
 function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }) {
   const meta = SOURCE_META[fact.source_type] || SOURCE_META.manual;
+  const editable = EDITABLE_SOURCE_TYPES.includes(fact.source_type);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { execute: remove, loading: deleting, error: deleteError } = useAction(() =>
@@ -374,26 +375,28 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
           </p>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg border border-ink-100 bg-ink-25 p-1">
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            icon={Pencil}
-            onClick={onEdit}
-            className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-blue-100 hover:text-blue-600 focus:ring-2 focus:ring-blue-200"
-          />
+        {editable && (
+          <div className="flex items-center gap-1 rounded-lg border border-ink-100 bg-ink-25 p-1">
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              icon={Pencil}
+              onClick={onEdit}
+              className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-blue-100 hover:text-blue-600 focus:ring-2 focus:ring-blue-200"
+            />
 
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            icon={Trash2}
-            loading={deleting}
-            onClick={() => setConfirmOpen(true)}
-            className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-red-100 hover:text-red-600 focus:ring-2 focus:ring-red-200"
-          />
-        </div>
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              icon={Trash2}
+              loading={deleting}
+              onClick={() => setConfirmOpen(true)}
+              className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-red-100 hover:text-red-600 focus:ring-2 focus:ring-red-200"
+            />
+          </div>
+        )}
       </div>
 
       {deleteError && (

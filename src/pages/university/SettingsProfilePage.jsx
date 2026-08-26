@@ -27,15 +27,21 @@ import Spinner from "../../components/common/Spinner";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
 import { setupPercent } from "../../lib/university";
-import { isValidUrl, isValidPhone } from "../../lib/validators";
+import { isValidUrl, isValidPhone, isValidEmail } from "../../lib/validators";
 
 function validateForm(form) {
     const errors = {};
     if (form.website_url.trim() && !isValidUrl(form.website_url)) {
         errors.website_url = "Enter a valid URL, including https:// (e.g. https://www.university.edu)";
     }
+    if (form.contact_email.trim() && !isValidEmail(form.contact_email)) {
+        errors.contact_email = "Enter a valid email address";
+    }
     if (form.contact_phone.trim() && !isValidPhone(form.contact_phone)) {
         errors.contact_phone = "Enter a valid phone number (7-15 digits)";
+    }
+    if (form.eligibility_criteria.some((c) => !c.criterion.trim() || !c.detail.trim())) {
+        errors.eligibility_criteria = "Fill in both fields for every requirement, or remove the empty one";
     }
     return errors;
 }
@@ -100,8 +106,19 @@ export default function SettingsProfilePage() {
         const errors = validateForm(form);
         if (Object.keys(errors).length) {
             setFormErrors(errors);
-            setOpenSection(errors.website_url ? "program" : "contact");
-            toast.error(errors.website_url || errors.contact_phone);
+            setOpenSection(
+                errors.website_url
+                    ? "program"
+                    : errors.contact_email || errors.contact_phone
+                        ? "contact"
+                        : "eligibility"
+            );
+            toast.error(
+                errors.website_url ||
+                errors.contact_email ||
+                errors.contact_phone ||
+                errors.eligibility_criteria
+            );
             return;
         }
         setFormErrors({});
@@ -121,14 +138,18 @@ export default function SettingsProfilePage() {
             eligibility_criteria: [...f.eligibility_criteria, { criterion: "", detail: "" }],
         }));
 
-    const updateCriterion = (i, key, value) =>
+    const updateCriterion = (i, key, value) => {
         setForm((f) => ({
             ...f,
             eligibility_criteria: f.eligibility_criteria.map((c, idx) => (idx === i ? { ...c, [key]: value } : c)),
         }));
+        setFormErrors((fe) => (fe.eligibility_criteria ? { ...fe, eligibility_criteria: undefined } : fe));
+    };
 
-    const removeCriterion = (i) =>
+    const removeCriterion = (i) => {
         setForm((f) => ({ ...f, eligibility_criteria: f.eligibility_criteria.filter((_, idx) => idx !== i) }));
+        setFormErrors((fe) => (fe.eligibility_criteria ? { ...fe, eligibility_criteria: undefined } : fe));
+    };
 
     if (loading) return <Spinner label="Loading profile..." />;
     if (loadError) return <ErrorBanner error={loadError} onDismiss={refetch} />;
@@ -329,6 +350,7 @@ export default function SettingsProfilePage() {
                             <Field
                                 label="Contact Email"
                                 hint="Official admissions email"
+                                error={formErrors.contact_email}
                             >
                                 <div className="relative">
 
@@ -349,6 +371,7 @@ export default function SettingsProfilePage() {
                                         onChange={update("contact_email")}
                                         placeholder="admissions@university.edu"
                                         className="pl-12"
+                                        error={formErrors.contact_email}
                                     />
 
                                 </div>
@@ -507,6 +530,10 @@ export default function SettingsProfilePage() {
                             </Button>
 
                         </div>
+
+                        {formErrors.eligibility_criteria && (
+                            <p className="text-xs text-red-600">{formErrors.eligibility_criteria}</p>
+                        )}
 
                         {/* Empty State */}
 
