@@ -23,7 +23,7 @@ export default function KnowledgePage() {
     <div>
       <PageHeader
         title="Verified knowledge"
-        description="Durable answers that resolve future student questions instantly, with confidence 1.0."
+        description="Durable answers that resolve future student questions instantly."
       />
 
       {loading ? (

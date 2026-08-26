@@ -9,7 +9,8 @@ import NotFoundPage from "./pages/NotFoundPage";
 import AccessRestrictedPage from "./pages/AccessRestrictedPage";
 import TotpEnrollPage from "./pages/auth/TotpEnrollPage";
 import UniversityLoginPage from "./pages/auth/UniversityLoginPage";
-import UniversityRegisterPage from "./pages/auth/UniversityRegisterPage";
+// University registration is superuser-only — not offered from this frontend.
+// import UniversityRegisterPage from "./pages/auth/UniversityRegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 
 import UniversityLayout from "./layouts/UniversityLayout";
@@ -46,7 +47,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/access-restricted" element={<AccessRestrictedPage />} />
             <Route path="/login" element={<UniversityLoginPage />} />
-            <Route path="/register" element={<UniversityRegisterPage />} />
+            {/* <Route path="/register" element={<UniversityRegisterPage />} /> */}
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
             <Route element={<RequireEnrollable />}>

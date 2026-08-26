@@ -38,7 +38,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50/60 via-white to-white">
       <TopBar />
-      <div className="mx-auto max-w-6xl px-6 py-20">
+      <div className="mx-auto max-w-6xl px-6 pt-32 pb-20">
         <div className="text-center">
           <span
           className="
@@ -93,6 +93,7 @@ export default function LandingPage() {
             profiles, and clear the escalated-question queue — all from one dashboard.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
+            {/* University registration is superuser-only — not offered from this frontend.
             <Link to="/register">
               <Button
                  size="lg"
@@ -104,15 +105,15 @@ export default function LandingPage() {
                   "
              >Register your university</Button>
             </Link>
+            */}
             <Link to="/login">
               <Button
                    size="lg"
-                   variant="secondary"
                    className="
                        transition-all
                        duration-300
                        hover:scale-105
-                       hover:shadow-md
+                       hover:shadow-lg
                    "
                >
                 Log in

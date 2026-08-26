@@ -243,6 +243,7 @@ export default function UniversityLayout() {
       <main
         className="
           ml-0
+          pt-12
           lg:ml-64
           min-h-screen
         "

@@ -48,7 +48,7 @@ export default function TotpEnrollPage() {
   return (
     <div className="min-h-screen bg-ink-50">
       <TopBar />
-      <div className="mx-auto flex max-w-md flex-col items-center px-4 py-16 sm:px-6">
+      <div className="mx-auto flex max-w-md flex-col items-center px-4 pt-28 pb-16 sm:px-6">
         <Card className="w-full">
           <CardHeader
             icon={ShieldCheck}

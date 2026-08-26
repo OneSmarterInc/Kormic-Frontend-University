@@ -21,8 +21,8 @@ export default function TopBar({ universityName, withSidebar = false }) {
   return (
     <header
         className={clsx(
-          "sticky top-0 z-30 h-12 border-b border-ink-200 bg-white shadow-sm",
-          withSidebar && "lg:ml-64"
+          "fixed top-0 z-30 h-12 w-full border-b border-ink-200 bg-white shadow-sm",
+          withSidebar && "lg:pl-64"
         )}
       >
       <div
@@ -187,11 +187,20 @@ export default function TopBar({ universityName, withSidebar = false }) {
             <>
               <Link
                 to="/login"
-                className="text-sm font-medium text-ink-600"
+                className="
+                  rounded-lg
+                  bg-brand-600
+                  px-4
+                  py-2
+                  text-sm
+                  font-medium
+                  text-white
+                "
               >
                 Log in
               </Link>
 
+              {/* University registration is superuser-only — not offered from this frontend.
               <Link
                 to="/register"
                 className="
@@ -206,6 +215,7 @@ export default function TopBar({ universityName, withSidebar = false }) {
               >
                 Register
               </Link>
+              */}
             </>
           )}
 
