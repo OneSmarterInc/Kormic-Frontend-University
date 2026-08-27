@@ -1,16 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
+  AlertTriangle,
+  Check,
   CheckCircle2,
   Compass,
   Globe,
   Layers,
   ListChecks,
+  Pencil,
   Plus,
   RotateCw,
   Sparkles,
   StopCircle,
   Trash2,
+  X,
   XCircle,
 } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
@@ -40,12 +44,22 @@ export default function ScrapeSourcesPage() {
   const [selectedUrl, setSelectedUrl] = useState(null);
   const [removingUrl, setRemovingUrl] = useState(null);
 
+  const [editingUrl, setEditingUrl] = useState(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [editError, setEditError] = useState("");
+  const [selectedUrls, setSelectedUrls] = useState([]);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+
   const [job, setJob] = useState(null);
   const [jobLoading, setJobLoading] = useState(true);
   const [jobError, setJobError] = useState(null);
   const [maxPages, setMaxPages] = useState(String(DEFAULT_MAX_PAGES));
   const [showResults, setShowResults] = useState(false);
   const [showClusters, setShowClusters] = useState(false);
+
+  const [editingWebsite, setEditingWebsite] = useState(false);
+  const [websiteDraft, setWebsiteDraft] = useState("");
+  const [websiteError, setWebsiteError] = useState("");
 
   const [scrapeJob, setScrapeJob] = useState(null);
   const [scrapeJobLoading, setScrapeJobLoading] = useState(true);
@@ -57,9 +71,34 @@ export default function ScrapeSourcesPage() {
     []
   );
 
+  // The website that Auto-discover crawls lives on the university profile.
+  const {
+    data: profile,
+    loading: profileLoading,
+    setData: setProfile,
+  } = useAsync(universityAdminApi.getProfile, []);
+
+  const websiteUrl = profile?.website_url || "";
+
   useEffect(() => {
     if (data) setUrls(data.scrape_urls || []);
   }, [data]);
+
+  // Pull the saved-URL list again without flipping the card into its loading
+  // spinner — used to reflect URLs a scrape/crawl just added without a page reload.
+  const refreshSavedUrls = useCallback(async () => {
+    try {
+      const res = await universityAdminApi.getScrapeUrls();
+      setUrls(res.scrape_urls || []);
+    } catch {
+      // Keep whatever's already on screen if the refresh fails.
+    }
+  }, []);
+
+  // Drop any bulk selection that no longer exists after the list changes.
+  useEffect(() => {
+    setSelectedUrls((prev) => prev.filter((u) => urls.includes(u)));
+  }, [urls]);
 
   // Latest auto-discover job, if any has ever run for this university.
   useEffect(() => {
@@ -91,13 +130,18 @@ export default function ScrapeSourcesPage() {
       try {
         const updated = await universityAdminApi.getAutoDiscoverJob(job.id);
         setJob(updated);
+
+        // Crawl just finished — reflect any pages it added to the saved list.
+        if (["completed", "stopped"].includes(updated.status)) {
+          refreshSavedUrls();
+        }
       } catch (err) {
         setJobError(err);
       }
     }, POLL_INTERVAL_MS);
 
     return () => clearTimeout(timer);
-  }, [job]);
+  }, [job, refreshSavedUrls]);
 
   // Latest scrape-now job, if any has ever run for this university — lets a
   // reloaded page resume polling without having kept the job id client-side.
@@ -147,11 +191,13 @@ export default function ScrapeSourcesPage() {
     if (scrapeJob.status === "completed") {
       notifiedScrapeJobRef.current = key;
       toast.success(`${scrapeJob.result?.total_facts_stored ?? 0} facts stored`);
+      // Refresh the saved-URL list so newly scraped pages show without a reload.
+      refreshSavedUrls();
     } else if (scrapeJob.status === "failed") {
       notifiedScrapeJobRef.current = key;
       toast.error(scrapeJob.error_message || "Scrape failed");
     }
-  }, [scrapeJob]);
+  }, [scrapeJob, refreshSavedUrls]);
 
   const {
     execute: persist,
@@ -172,6 +218,44 @@ export default function ScrapeSourcesPage() {
   const { execute: stopDiscover, loading: stopping } = useAction(() =>
     universityAdminApi.stopAutoDiscoverJob(job.id)
   );
+
+  const { execute: saveWebsite, loading: savingWebsite } = useAction((url) =>
+    universityAdminApi.updateProfile({ website_url: url })
+  );
+
+  const startEditWebsite = () => {
+    setWebsiteDraft(websiteUrl);
+    setWebsiteError("");
+    setEditingWebsite(true);
+  };
+
+  const cancelEditWebsite = () => {
+    setEditingWebsite(false);
+    setWebsiteError("");
+  };
+
+  const handleSaveWebsite = async () => {
+    const value = websiteDraft.trim();
+
+    if (value && !isValidUrl(value)) {
+      setWebsiteError("Enter a valid URL, including https:// (e.g. https://www.university.edu)");
+      return;
+    }
+
+    if (value === websiteUrl) {
+      cancelEditWebsite();
+      return;
+    }
+
+    try {
+      const updated = await saveWebsite(value);
+      setProfile(updated);
+      cancelEditWebsite();
+      toast.success(value ? "Website URL saved" : "Website URL cleared");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   const addUrl = async () => {
     const value = draft.trim();
@@ -219,6 +303,77 @@ export default function ScrapeSourcesPage() {
       toast.error(err.message);
     } finally {
       setRemovingUrl(null);
+    }
+  };
+
+  const startEditUrl = (url) => {
+    setEditingUrl(url);
+    setEditDraft(url);
+    setEditError("");
+  };
+
+  const cancelEditUrl = () => {
+    setEditingUrl(null);
+    setEditError("");
+  };
+
+  const saveEditUrl = async () => {
+    const value = editDraft.trim();
+
+    if (!value || value === editingUrl) {
+      cancelEditUrl();
+      return;
+    }
+
+    if (!isValidUrl(value)) {
+      setEditError("Enter a valid URL, including https:// (e.g. https://university.edu/admissions)");
+      return;
+    }
+
+    if (urls.includes(value)) {
+      setEditError("This URL is already saved.");
+      return;
+    }
+
+    const next = urls.map((u) => (u === editingUrl ? value : u));
+
+    try {
+      const res = await persist(next);
+      setUrls(res.scrape_urls);
+      if (selectedUrl === editingUrl) setSelectedUrl(value);
+      setSelectedUrls((prev) => prev.map((u) => (u === editingUrl ? value : u)));
+      cancelEditUrl();
+      toast.success("URL updated");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const toggleSelectUrl = (url) =>
+    setSelectedUrls((prev) =>
+      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]
+    );
+
+  const allUrlsSelected = urls.length > 0 && selectedUrls.length === urls.length;
+
+  const toggleSelectAllUrls = () =>
+    setSelectedUrls(allUrlsSelected ? [] : [...urls]);
+
+  const bulkDeleteUrls = async () => {
+    const removeSet = new Set(selectedUrls);
+    const next = urls.filter((u) => !removeSet.has(u));
+
+    try {
+      const res = await persist(next);
+      setUrls(res.scrape_urls);
+      if (removeSet.has(selectedUrl)) setSelectedUrl(null);
+      if (removeSet.has(editingUrl)) cancelEditUrl();
+      const count = removeSet.size;
+      setSelectedUrls([]);
+      setBulkConfirmOpen(false);
+      toast.success(`${count} URL${count === 1 ? "" : "s"} removed`);
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
@@ -315,7 +470,13 @@ export default function ScrapeSourcesPage() {
                   readOnly={true}
                   title="Max pages to crawl (20-400)"
                 />
-                <Button icon={Sparkles} onClick={handleStartDiscover} loading={starting}>
+                <Button
+                  icon={Sparkles}
+                  onClick={handleStartDiscover}
+                  loading={starting}
+                  disabled={profileLoading || !websiteUrl}
+                  title={!websiteUrl ? "Add a website URL below first" : undefined}
+                >
                   {job ? "Run again" : "Start crawl"}
                 </Button>
               </div>
@@ -325,6 +486,102 @@ export default function ScrapeSourcesPage() {
 
         <CardBody className="space-y-4">
           {jobError && <ErrorBanner error={jobError} onDismiss={() => setJobError(null)} />}
+
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Auto-discover crawls your <strong>university's website</strong> — set the URL
+              below to your own official <strong>base URL only</strong> (e.g.{" "}
+              <span className="font-mono">https://www.university.edu</span>). Pointing it at
+              any other site will fill your knowledge base with wrong facts. This is the same
+              Website field as on your University Profile.
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-ink-100 bg-white p-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-ink-500">
+                <Globe className="h-3.5 w-3.5" />
+                Website URL
+              </span>
+
+              {!editingWebsite && !profileLoading && websiteUrl && (
+                <button
+                  type="button"
+                  onClick={startEditWebsite}
+                  className="rounded p-1 text-ink-400 hover:bg-blue-50 hover:text-blue-600"
+                  title="Edit website URL"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {profileLoading ? (
+              <p className="mt-1 text-sm text-ink-400">Loading…</p>
+            ) : editingWebsite ? (
+              <div className="mt-2 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={websiteDraft}
+                    onChange={(e) => {
+                      setWebsiteDraft(e.target.value);
+                      setWebsiteError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSaveWebsite();
+                      } else if (e.key === "Escape") {
+                        cancelEditWebsite();
+                      }
+                    }}
+                    placeholder="https://www.university.edu"
+                    type="url"
+                    error={websiteError}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    icon={Check}
+                    loading={savingWebsite}
+                    onClick={handleSaveWebsite}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    icon={X}
+                    onClick={cancelEditWebsite}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                {websiteError && <p className="text-xs text-red-600">{websiteError}</p>}
+              </div>
+            ) : websiteUrl ? (
+              <a
+                href={websiteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 block truncate text-sm text-ink-700 hover:text-brand-600"
+              >
+                {websiteUrl}
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditWebsite}
+                className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add website URL
+              </button>
+            )}
+          </div>
 
           {jobLoading ? (
             <Spinner label="Checking for a previous crawl..." />
@@ -446,6 +703,11 @@ export default function ScrapeSourcesPage() {
 
           {draftError && <p className="text-xs text-red-600">{draftError}</p>}
 
+          <p className="text-xs text-ink-400">
+            Add pages that belong to your own university's website only — URLs from other
+            sites will feed wrong facts into your knowledge base.
+          </p>
+
           {loading ? (
             <Spinner label="Loading saved URLs..." />
           ) : error ? (
@@ -457,43 +719,152 @@ export default function ScrapeSourcesPage() {
               description="Add your admissions or program pages above, or use auto-discover, then hit Scrape now."
             />
           ) : (
-            <ul className="space-y-2">
-              {urls.map((url) => {
-                const isSelected = selectedUrl === url;
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 bg-ink-50/60 px-3 py-2">
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-600">
+                  <input
+                    type="checkbox"
+                    checked={allUrlsSelected}
+                    onChange={toggleSelectAllUrls}
+                    className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  {selectedUrls.length > 0 ? `${selectedUrls.length} selected` : "Select all"}
+                </label>
 
-                return (
-                  <li
-                    key={url}
-                    onClick={() => setSelectedUrl(url)}
-                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm ${isSelected
-                        ? "border-blue-500 bg-blue-50/50 shadow-sm"
-                        : "border-ink-100 bg-white"
-                      }`}
+                {selectedUrls.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    icon={Trash2}
+                    loading={saving}
+                    onClick={() => setBulkConfirmOpen(true)}
                   >
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => setSelectedUrl(url)}
-                      className="truncate text-ink-700 hover:text-brand-600"
-                    >
-                      {url}
-                    </a>
+                    Delete selected ({selectedUrls.length})
+                  </Button>
+                )}
+              </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRemovingUrl(url);
-                      }}
-                      className="shrink-0 rounded p-1 text-ink-400 hover:bg-red-50 hover:text-red-600"
+              <ul className="space-y-2">
+                {urls.map((url) => {
+                  const isSelected = selectedUrl === url;
+                  const isChecked = selectedUrls.includes(url);
+                  const isEditing = editingUrl === url;
+
+                  return (
+                    <li
+                      key={url}
+                      onClick={() => !isEditing && setSelectedUrl(url)}
+                      className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm ${
+                        isEditing ? "cursor-default" : "cursor-pointer"
+                      } ${
+                        isChecked
+                          ? "border-brand-400 bg-brand-50/40"
+                          : isSelected
+                            ? "border-blue-500 bg-blue-50/50 shadow-sm"
+                            : "border-ink-100 bg-white"
+                      }`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleSelectUrl(url)}
+                        className="h-4 w-4 shrink-0 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                      />
+
+                      {isEditing ? (
+                        <div
+                          className="flex flex-1 flex-col gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editDraft}
+                              onChange={(e) => {
+                                setEditDraft(e.target.value);
+                                setEditError("");
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  saveEditUrl();
+                                } else if (e.key === "Escape") {
+                                  cancelEditUrl();
+                                }
+                              }}
+                              type="url"
+                              error={editError}
+                              autoFocus
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              icon={Check}
+                              loading={saving}
+                              onClick={saveEditUrl}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              icon={X}
+                              onClick={cancelEditUrl}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                          {editError && <p className="text-xs text-red-600">{editError}</p>}
+                        </div>
+                      ) : (
+                        <>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedUrl(url);
+                            }}
+                            className="flex-1 truncate text-ink-700 hover:text-brand-600"
+                          >
+                            {url}
+                          </a>
+
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditUrl(url);
+                              }}
+                              className="rounded p-1 text-ink-400 hover:bg-blue-50 hover:text-blue-600"
+                              title="Edit URL"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRemovingUrl(url);
+                              }}
+                              className="rounded p-1 text-ink-400 hover:bg-red-50 hover:text-red-600"
+                              title="Remove URL"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </CardBody>
       </Card>
@@ -564,6 +935,19 @@ export default function ScrapeSourcesPage() {
         loading={saving}
         onConfirm={removeUrl}
         onClose={() => setRemovingUrl(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        title="Remove selected URLs?"
+        message={`Remove ${selectedUrls.length} selected URL${
+          selectedUrls.length === 1 ? "" : "s"
+        } from your saved URLs? This can't be undone.`}
+        confirmLabel={`Remove ${selectedUrls.length}`}
+        danger
+        loading={saving}
+        onConfirm={bulkDeleteUrls}
+        onClose={() => setBulkConfirmOpen(false)}
       />
     </div>
   );

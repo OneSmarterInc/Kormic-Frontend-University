@@ -23,15 +23,13 @@ const SOURCE_META = {
   conversation: { tone: "warning", label: "Learned in chat" },
 };
 
-// Only manual/seed facts are editable/deletable per the backend (§2.13/§2.14 of the
-// API contract) — Edit/Delete are hidden for scraped/conversation/human_verified facts
-// so officers can't fill out a form that's guaranteed to 400 on submit.
-const EDITABLE_SOURCE_TYPES = ["manual", "seed"];
-
 export default function KnowledgeBasePage() {
   const [editingFactId, setEditingFactId] = useState(null);
   const [section, setSection] = useState(null);
   const [sourceUrl, setSourceUrl] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Clear the URL filter whenever the section changes — it only applies to "scraped".
   useEffect(() => {
@@ -58,10 +56,61 @@ export default function KnowledgeBasePage() {
   const sourceUrls = urlsData?.urls || [];
   const totalCount = sections.reduce((sum, s) => sum + s.count, 0);
 
+  // Every fact — regardless of source — can be edited and deleted.
+  const allSelected = facts.length > 0 && selectedIds.length === facts.length;
+
+  // Drop any selection that's no longer visible after a filter change / refetch.
+  useEffect(() => {
+    const visibleIds = new Set((data?.knowledge || []).map((f) => f.id));
+    setSelectedIds((prev) => prev.filter((id) => visibleIds.has(id)));
+  }, [data]);
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
+  const toggleSelectAll = () =>
+    setSelectedIds(allSelected ? [] : facts.map((f) => f.id));
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+
+    // No bulk endpoint — delete one at a time and tolerate partial failure.
+    const results = await Promise.allSettled(
+      selectedIds.map((id) => universityAdminApi.deleteKnowledge(id))
+    );
+    const okIds = selectedIds.filter((_, i) => results[i].status === "fulfilled");
+    const failed = selectedIds.length - okIds.length;
+
+    if (okIds.length > 0) {
+      const okSet = new Set(okIds);
+      setData((prev) => ({
+        knowledge: (prev?.knowledge || []).filter((f) => !okSet.has(f.id)),
+      }));
+      refetchSections();
+      refetchUrls();
+      if (okSet.has(editingFactId)) setEditingFactId(null);
+    }
+
+    setSelectedIds([]);
+    setBulkConfirmOpen(false);
+    setBulkDeleting(false);
+
+    if (failed === 0) {
+      toast.success(`${okIds.length} fact${okIds.length === 1 ? "" : "s"} deleted`);
+    } else if (okIds.length === 0) {
+      toast.error("Couldn't delete the selected facts");
+    } else {
+      toast.error(`Deleted ${okIds.length}, ${failed} failed`);
+    }
+  };
+
   const handleDeleted = (id) => {
     setData((prev) => ({
       knowledge: prev.knowledge.filter((f) => f.id !== id),
     }));
+    setSelectedIds((prev) => prev.filter((x) => x !== id));
     refetchSections();
     refetchUrls();
     if (editingFactId === id) setEditingFactId(null);
@@ -172,11 +221,40 @@ export default function KnowledgeBasePage() {
             />
           ) : (
             <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 bg-ink-50/60 px-3 py-2">
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-600">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  {selectedIds.length > 0
+                    ? `${selectedIds.length} selected`
+                    : "Select all"}
+                </label>
+
+                {selectedIds.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    icon={Trash2}
+                    loading={bulkDeleting}
+                    onClick={() => setBulkConfirmOpen(true)}
+                  >
+                    Delete selected ({selectedIds.length})
+                  </Button>
+                )}
+              </div>
+
               {facts.map((fact) => (
                 <FactRow
                   key={fact.id}
                   fact={fact}
                   isEditing={editingFactId === fact.id}
+                  selected={selectedIds.includes(fact.id)}
+                  onToggleSelect={() => toggleSelect(fact.id)}
                   onEdit={() => setEditingFactId(fact.id)}
                   onCancelEdit={() => setEditingFactId(null)}
                   onUpdated={handleUpdated}
@@ -187,6 +265,19 @@ export default function KnowledgeBasePage() {
           )}
         </CardBody>
       </Card>
+
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        title="Delete selected facts?"
+        message={`Permanently delete ${selectedIds.length} selected fact${
+          selectedIds.length === 1 ? "" : "s"
+        }? This can't be undone.`}
+        confirmLabel={`Delete ${selectedIds.length}`}
+        danger
+        loading={bulkDeleting}
+        onConfirm={handleBulkDelete}
+        onClose={() => setBulkConfirmOpen(false)}
+      />
     </div>
   );
 }
@@ -303,9 +394,17 @@ function AddFactCard({ onCreated }) {
   );
 }
 
-function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }) {
+function FactRow({
+  fact,
+  isEditing,
+  selected = false,
+  onToggleSelect,
+  onEdit,
+  onCancelEdit,
+  onUpdated,
+  onDeleted,
+}) {
   const meta = SOURCE_META[fact.source_type] || SOURCE_META.manual;
-  const editable = EDITABLE_SOURCE_TYPES.includes(fact.source_type);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { execute: remove, loading: deleting, error: deleteError } = useAction(() =>
@@ -338,8 +437,20 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
   }
 
   return (
-    <div className="rounded-lg border border-ink-100 bg-white p-3 transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm">
+    <div
+      className={clsx(
+        "rounded-lg border bg-white p-3 transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm",
+        selected ? "border-brand-400 bg-brand-50/40" : "border-ink-100"
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          className="mt-1 h-4 w-4 shrink-0 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+        />
+
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <Badge tone={meta.tone}>{meta.label}</Badge>
@@ -375,28 +486,26 @@ function FactRow({ fact, isEditing, onEdit, onCancelEdit, onUpdated, onDeleted }
           </p>
         </div>
 
-        {editable && (
-          <div className="flex items-center gap-1 rounded-lg border border-ink-100 bg-ink-25 p-1">
-            <Button
-              type="button"
-              size="xs"
-              variant="ghost"
-              icon={Pencil}
-              onClick={onEdit}
-              className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-blue-100 hover:text-blue-600 focus:ring-2 focus:ring-blue-200"
-            />
+        <div className="flex items-center gap-1 rounded-lg border border-ink-100 bg-ink-25 p-1">
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            icon={Pencil}
+            onClick={onEdit}
+            className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-blue-100 hover:text-blue-600 focus:ring-2 focus:ring-blue-200"
+          />
 
-            <Button
-              type="button"
-              size="xs"
-              variant="ghost"
-              icon={Trash2}
-              loading={deleting}
-              onClick={() => setConfirmOpen(true)}
-              className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-red-100 hover:text-red-600 focus:ring-2 focus:ring-red-200"
-            />
-          </div>
-        )}
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            icon={Trash2}
+            loading={deleting}
+            onClick={() => setConfirmOpen(true)}
+            className="h-8 w-8 rounded-md p-0 text-ink-500 transition-all duration-150 hover:bg-red-100 hover:text-red-600 focus:ring-2 focus:ring-red-200"
+          />
+        </div>
       </div>
 
       {deleteError && (

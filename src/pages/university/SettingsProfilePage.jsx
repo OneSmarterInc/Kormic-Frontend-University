@@ -219,7 +219,7 @@ export default function SettingsProfilePage() {
 
                             <Field
                                 label="Website"
-                                hint="Official university website"
+                                hint="Your university's official base URL only (e.g. https://www.university.edu) — auto-discover crawls this address, so an unrelated site will fill your knowledge base with wrong facts."
                                 error={formErrors.website_url}
                             >
                                 <div className="relative">

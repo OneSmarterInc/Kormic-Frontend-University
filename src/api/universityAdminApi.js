@@ -150,11 +150,11 @@ export const getKnowledgeSections = (signal) =>
 export const getKnowledgeSourceUrls = (signal) =>
   client.get("/university-admin/knowledge/urls/", { signal }).then((r) => r.data);
 
-/** PATCH /api/university-admin/knowledge/<id>/ — only "manual"/"seed" facts are editable */
+/** PATCH /api/university-admin/knowledge/<id>/ — editable regardless of source_type */
 export const updateKnowledge = (id, payload) =>
   client.patch(`/university-admin/knowledge/${encodeURIComponent(id)}/`, payload).then((r) => r.data);
 
-/** DELETE /api/university-admin/knowledge/<id>/ — only "manual"/"seed" facts are deletable */
+/** DELETE /api/university-admin/knowledge/<id>/ — deletable regardless of source_type */
 export const deleteKnowledge = (id) =>
   client.delete(`/university-admin/knowledge/${encodeURIComponent(id)}/`).then((r) => r.data);
 
