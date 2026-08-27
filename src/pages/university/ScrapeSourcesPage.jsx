@@ -3,8 +3,8 @@ import toast from "react-hot-toast";
 import {
   AlertTriangle,
   Check,
-  CheckCircle2,
   Compass,
+  FileText,
   Globe,
   Layers,
   ListChecks,
@@ -15,7 +15,6 @@ import {
   StopCircle,
   Trash2,
   X,
-  XCircle,
 } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import Card, { CardBody, CardHeader } from "../../components/common/Card";
@@ -27,6 +26,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import AutoDiscoverResultsModal from "../../components/university/AutoDiscoverResultsModal";
 import AutoDiscoverClustersModal from "../../components/university/AutoDiscoverClustersModal";
+import ScrapeResultModal from "../../components/university/ScrapeResultModal";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import * as universityAdminApi from "../../api/universityAdminApi";
 import { useAction, useAsync } from "../../hooks/useAsync";
@@ -60,6 +60,9 @@ export default function ScrapeSourcesPage() {
   const [editingWebsite, setEditingWebsite] = useState(false);
   const [websiteDraft, setWebsiteDraft] = useState("");
   const [websiteError, setWebsiteError] = useState("");
+
+  // { result, title, context } for the shared scrape-result modal, or null.
+  const [resultModal, setResultModal] = useState(null);
 
   const [scrapeJob, setScrapeJob] = useState(null);
   const [scrapeJobLoading, setScrapeJobLoading] = useState(true);
@@ -134,6 +137,11 @@ export default function ScrapeSourcesPage() {
         // Crawl just finished — reflect any pages it added to the saved list.
         if (["completed", "stopped"].includes(updated.status)) {
           refreshSavedUrls();
+          if (updated.scrape_result) {
+            toast.success(
+              `Crawl complete — ${updated.scrape_result.total_facts_stored} fact(s) stored`
+            );
+          }
         }
       } catch (err) {
         setJobError(err);
@@ -628,14 +636,57 @@ export default function ScrapeSourcesPage() {
                 {job.failed_count > 0 && <Badge tone="danger">{job.failed_count} failed</Badge>}
               </div> */}
 
-              {jobHasResults && (
+              {["completed", "stopped"].includes(job.status) && (
                 <div className="flex flex-wrap gap-2">
-                  <Button icon={ListChecks} variant="secondary" onClick={() => setShowResults(true)}>
-                    Review discovered pages
-                  </Button>
-                  <Button icon={Layers} variant="secondary" onClick={() => setShowClusters(true)}>
-                    Review by department
-                  </Button>
+                  <Badge tone="neutral">
+                    {job.pages_crawled} / {job.pages_discovered || "?"} pages crawled
+                  </Badge>
+                  {job.relevant_count > 0 && (
+                    <Badge tone="success">{job.relevant_count} relevant</Badge>
+                  )}
+                  {job.review_count > 0 && (
+                    <Badge tone="warning">{job.review_count} to review</Badge>
+                  )}
+                  {job.excluded_count > 0 && (
+                    <Badge tone="neutral">{job.excluded_count} excluded</Badge>
+                  )}
+                  {job.failed_count > 0 && (
+                    <Badge tone="danger">{job.failed_count} failed</Badge>
+                  )}
+                  {job.auto_apply && <Badge tone="brand">auto-applied</Badge>}
+                </div>
+              )}
+
+              {(jobHasResults || job.scrape_result) && (
+                <div className="flex flex-wrap gap-2">
+                  {jobHasResults && (
+                    <>
+                      <Button icon={ListChecks} variant="secondary" onClick={() => setShowResults(true)}>
+                        Review discovered pages
+                      </Button>
+                      <Button icon={Layers} variant="secondary" onClick={() => setShowClusters(true)}>
+                        Review by department
+                      </Button>
+                    </>
+                  )}
+
+                  {job.scrape_result && (
+                    <Button
+                      icon={FileText}
+                      variant="secondary"
+                      onClick={() =>
+                        setResultModal({
+                          result: job.scrape_result,
+                          title: "Last scrape result",
+                          context: job.completed_at
+                            ? `${job.base_url} · finished ${new Date(job.completed_at).toLocaleString()}`
+                            : job.base_url,
+                        })
+                      }
+                    >
+                      Last scrape result
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -651,6 +702,22 @@ export default function ScrapeSourcesPage() {
             <div className="flex items-center gap-2">
               {scrapeJobIsActive && (
                 <Badge tone={autoDiscoverStatusTone(scrapeJob.status)}>{scrapeJob.status}</Badge>
+              )}
+              {!scrapeJobIsActive && scrapeJob?.status === "completed" && scrapeJob.result && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={FileText}
+                  onClick={() =>
+                    setResultModal({
+                      result: scrapeJob.result,
+                      title: "Last scrape result",
+                      context: `${scrapeJob.result.total_facts_stored} fact(s) across ${scrapeJob.result.results.length} URL(s)`,
+                    })
+                  }
+                >
+                  View result
+                </Button>
               )}
               <Button
                 icon={RotateCw}
@@ -869,44 +936,13 @@ export default function ScrapeSourcesPage() {
         </CardBody>
       </Card>
 
-      {scrapeJob?.status === "completed" && scrapeJob.result && (
-        <Card>
-          <CardHeader
-            title="Last scrape result"
-            subtitle={`${scrapeJob.result.total_facts_stored} fact(s) stored across ${scrapeJob.result.results.length} URL(s)`}
-          />
-
-          <CardBody className="space-y-2">
-            {scrapeJob.result.results.map((r) => (
-              <div
-                key={r.url}
-                className="flex items-start justify-between gap-3 rounded-lg border border-ink-100 px-3 py-2 transition-all duration-150 hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-ink-700">{r.url}</p>
-                  {r.error && (
-                    <p className="mt-0.5 text-xs text-red-600">{r.error}</p>
-                  )}
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge tone="neutral">{r.facts_stored} facts</Badge>
-
-                  {r.status === "ok" ? (
-                    <Badge tone="success">
-                      <CheckCircle2 className="h-3 w-3" /> ok
-                    </Badge>
-                  ) : (
-                    <Badge tone="danger">
-                      <XCircle className="h-3 w-3" /> failed
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </CardBody>
-        </Card>
-      )}
+      <ScrapeResultModal
+        open={!!resultModal}
+        onClose={() => setResultModal(null)}
+        result={resultModal?.result}
+        title={resultModal?.title}
+        context={resultModal?.context}
+      />
 
       {job && (
         <AutoDiscoverResultsModal
