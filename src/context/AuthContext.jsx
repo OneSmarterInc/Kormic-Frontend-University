@@ -84,15 +84,18 @@ export function AuthProvider({ children }) {
     return res.user;
   }, []);
 
-  // POST /auth/totp/verify-enrollment/ now returns the same {access, refresh, user}
-  // pair as login, alongside backup_codes — store the tokens so newly-enrolled
-  // officers get a refresh token instead of being stuck on an access-only session.
+  // POST /auth/totp/verify-enrollment/ succeeds here — the authenticator is now
+  // registered. The response always carries backup_codes and may also carry a fresh
+  // {access, refresh, user} pair. Persist whatever tokens came back (so a
+  // newly-enrolled officer gets a refresh token instead of an access-only session),
+  // but do NOT touch `status` — the user is still in the "must_enroll_totp" state until they log in again.
   const completeTotpEnrollment = useCallback((res) => {
-    setAccessToken(res.access);
-    setRefreshToken(res.refresh);
-    setCachedUser(res.user);
-    setUser(res.user);
-    setStatus(statusForUser(res.user));
+    if (res?.access) setAccessToken(res.access);
+    if (res?.refresh) setRefreshToken(res.refresh);
+    if (res?.user) {
+      setCachedUser(res.user);
+      setUser(res.user);
+    }
   }, []);
 
   const refreshUser = useCallback(async () => {

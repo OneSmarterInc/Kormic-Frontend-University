@@ -172,11 +172,44 @@ export const updateKnowledgeGroup = (slug, payload) =>
     .then((r) => r.data);
 
 /**
- * GET /api/university-admin/knowledge-groups/<slug>/knowledge/ — the group's own record plus
- * all of its facts in one call. 404s if <slug> isn't one of the four valid groups. Lazily
- * bootstraps the four default groups, same as listKnowledgeGroups.
+ * GET /api/university-admin/knowledge-groups/<slug>/knowledge_list/ — the group's own record
+ * plus its manually-tagged facts in one call (auto-scraped facts are never in here). 404s if
+ * <slug> isn't one of the four valid groups. Lazily bootstraps the four default groups, same
+ * as listKnowledgeGroups.
  */
-export const getKnowledgeGroupDetail = (slug, signal) =>
+export const getKnowledgeGroupKnowledge = (slug, signal) =>
   client
-    .get(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/knowledge/`, { signal })
+    .get(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/knowledge_list/`, {
+      signal,
+    })
+    .then((r) => r.data);
+
+/**
+ * GET /api/university-admin/knowledge-groups/<slug>/escalations_list/ — the group's own record
+ * plus every escalation routed to it, newest first (the list behind escalation_count). The
+ * group's contact is emailed automatically as each escalation lands, so this is read-only.
+ */
+export const getKnowledgeGroupEscalations = (slug, signal) =>
+  client
+    .get(`/university-admin/knowledge-groups/${encodeURIComponent(slug)}/escalations_list/`, {
+      signal,
+    })
+    .then((r) => r.data);
+
+/**
+ * POST /api/university-admin/knowledge-groups/<slug>/escalations_list/notify/ — manual re-send
+ * of the escalation digest to the group's contact. Both fields are optional: omitting
+ * escalationIds covers every still-pending escalation for the group, and `message` is prepended
+ * to the email as a note. 400 if the group has no contact email or the ids are bad, 404 for a
+ * bad slug or no matching escalations, 502 if the send itself failed (safe to retry).
+ */
+export const notifyKnowledgeGroupEscalations = (slug, { escalationIds, message } = {}) =>
+  client
+    .post(
+      `/university-admin/knowledge-groups/${encodeURIComponent(slug)}/escalations_list/notify/`,
+      {
+        ...(escalationIds?.length ? { escalation_ids: escalationIds } : {}),
+        ...(message?.trim() ? { message: message.trim() } : {}),
+      }
+    )
     .then((r) => r.data);

@@ -33,16 +33,25 @@ export default function TotpEnrollPage() {
     e.preventDefault();
     try {
       const res = await confirm();
+      // Stash the fresh tokens but stay on this page — `status` deliberately isn't
+      // touched yet, so the backup-codes screen below can actually render.
       completeTotpEnrollment(res);
-      setBackupCodes(res.backup_codes);
+      setBackupCodes(res.backup_codes || []);
     } catch {
       // surfaced via confirmError
     }
   };
 
+  // Only now, once the officer has seen their backup codes, do we resolve the
+  // session against /auth/me/ and let the router move them on.
   const handleContinue = async () => {
-    const user = await refreshUser();
-    navigate(roleHome(user));
+    try {
+      const user = await refreshUser();
+      navigate(roleHome(user));
+    } catch {
+      toast.error("Couldn't confirm your session — please log in again.");
+      navigate("/login");
+    }
   };
 
   return (
