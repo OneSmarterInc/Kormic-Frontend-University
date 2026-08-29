@@ -220,7 +220,7 @@ export default function DashboardPage() {
 
                    <div className="relative text-center">
 
-                     <p className="text-xl font-bold">
+                     <p className="text-base font-bold">
                        {percent}%
                      </p>
 
@@ -238,10 +238,10 @@ export default function DashboardPage() {
 
                {/* RIGHT */}
 
-             <div className="flex h-full items-end justify-end">
+             <div className="flex h-full items-center justify-center">
                <Link
-                 to={`/university/${universityId}/${complete ? "profiles" : "settings/profile"}`}
-                 className="inline-flex h-8 items-center gap-1 rounded-md bg-white px-3 text-xs font-medium text-brand-700 shadow-sm transition hover:bg-gray-100"
+                 to={`/university/${universityId}/settings/profile`}
+                 className="inline-flex h-8 items-center justify-center gap-1 rounded-md bg-white px-3 text-xs font-medium text-brand-700 shadow-sm transition hover:bg-gray-100"
                >
                  <ArrowRight className="h-3 w-3" />
                  {complete ? "View Profiles" : "Continue Setup"}

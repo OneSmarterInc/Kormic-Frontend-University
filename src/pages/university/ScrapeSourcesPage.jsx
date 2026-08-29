@@ -618,9 +618,9 @@ export default function ScrapeSourcesPage() {
                     <span className="truncate">
                       {job.current_url || "Starting..."}
                     </span>
-                    <span className="shrink-0">
+                    {/* <span className="shrink-0">
                       {job.pages_crawled} / {job.pages_discovered || "?"} pages
-                    </span>
+                    </span> */}
                   </div>
                 </div>
               )}
@@ -638,22 +638,22 @@ export default function ScrapeSourcesPage() {
 
               {["completed", "stopped"].includes(job.status) && (
                 <div className="flex flex-wrap gap-2">
-                  <Badge tone="neutral">
-                    {job.pages_crawled} / {job.pages_discovered || "?"} pages crawled
-                  </Badge>
-                  {job.relevant_count > 0 && (
+                  {/* <Badge tone="neutral">
+                    {job.pages_crawled} {job.pages_crawled === 1 ? "page" : "pages"} crawled
+                  </Badge> */}
+                  {/* {job.relevant_count > 0 && (
                     <Badge tone="success">{job.relevant_count} relevant</Badge>
-                  )}
-                  {job.review_count > 0 && (
+                  )} */}
+                  {/* {job.review_count > 0 && (
                     <Badge tone="warning">{job.review_count} to review</Badge>
-                  )}
-                  {job.excluded_count > 0 && (
+                  )} */}
+                  {/* {job.excluded_count > 0 && (
                     <Badge tone="neutral">{job.excluded_count} excluded</Badge>
-                  )}
-                  {job.failed_count > 0 && (
+                  )} */}
+                  {/* {job.failed_count > 0 && (
                     <Badge tone="danger">{job.failed_count} failed</Badge>
-                  )}
-                  {job.auto_apply && <Badge tone="brand">auto-applied</Badge>}
+                  )} */}
+                  {/* {job.auto_apply && <Badge tone="brand">auto-applied</Badge>} */}
                 </div>
               )}
 

@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { MessageCircle, Send } from "lucide-react";
+import { Loader2, MessageCircle, Send } from "lucide-react";
 
 import Button from "./Button";
 import { Input } from "./Input";
-import Spinner from "./Spinner";
 
 /** Renders `**bold**` spans within a line of otherwise-plain text. */
 function renderInline(text, keyPrefix) {
@@ -285,8 +284,9 @@ export default function ChatThread({
 
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl bg-ink-100 px-4 py-2">
-              <Spinner />
+            <div className="flex items-center gap-2 rounded-2xl bg-ink-100 px-4 py-2 text-sm text-ink-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Generating…</span>
             </div>
           </div>
         )}
